@@ -23,6 +23,7 @@ export default function Blackjack({ player, onCoins }: Props) {
   const [dealer, setDealerHand] = useState<TCard[]>([]);
   const [phase, setPhase] = useState<Phase>("idle");
   const [outcome, setOutcome] = useState<string>("");
+  const [bankroll, setBankroll] = useState(5000);
   const bet = 100;
 
   const pv = useMemo(() => handValue(player_), [player_]);
@@ -36,6 +37,8 @@ export default function Blackjack({ player, onCoins }: Props) {
     setPlayerHand(ph);
     setDealerHand(dh);
     setOutcome("");
+    // A player natural resolves immediately — but only against a dealer who
+    // does not also hold a natural (dual naturals push).
     if (isBlackjack(ph)) {
       setPhase("done");
       settle(ph, dh, true);
@@ -77,6 +80,9 @@ export default function Blackjack({ player, onCoins }: Props) {
     if (p > 21) {
       text = "Bust — House Wins";
       net = -bet;
+    } else if (playerBJ && isBlackjack(dh)) {
+      text = "Push — Both Blackjack";
+      net = 0;
     } else if (playerBJ) {
       text = "Blackjack! Pays 3:2";
       net = Math.round(bet * 1.5);
@@ -92,11 +98,14 @@ export default function Blackjack({ player, onCoins }: Props) {
     }
     setOutcome(text);
 
+    setBankroll((b) => b + net);
+
     // Emit to the Data 360 seam. Blackjack "random events" for hosts.
-    if (net >= bet) {
+    if (net > 0) {
       onCoins();
       emitEvent({
-        type: playerBJ || net > bet ? "BIG_WIN" : "BIG_WIN",
+        // A natural blackjack is the marquee moment → JACKPOT event.
+        type: playerBJ ? "JACKPOT" : "BIG_WIN",
         player: { id: player.id, name: player.name, tier: player.tier },
         game: "BLACKJACK",
         amount: net,
@@ -123,7 +132,10 @@ export default function Blackjack({ player, onCoins }: Props) {
 
   return (
     <div className="bj-table deco-frame">
-      <div className="bj-arc">Blackjack pays 3 to 2 · Dealer stands on 17</div>
+      <div className="bj-arc">
+        Blackjack pays 3 to 2 · Dealer stands on 17 · Bankroll $
+        {bankroll.toLocaleString()}
+      </div>
 
       <div className="bj-seat">
         <div className="seat-label">

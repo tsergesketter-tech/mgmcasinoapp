@@ -66,9 +66,17 @@ export default function OrchestrationFeed({ items }: { items: FeedItem[] }) {
                     {Math.abs(event.amount).toLocaleString()}
                   </span>
                 )}
-                <span className={result.ok ? "ok" : "amt-neg"}>
+                <span
+                  className={
+                    result.pending ? "" : result.ok ? "ok" : "amt-neg"
+                  }
+                >
                   {result.mode === "live" ? "LIVE" : "SIM"} ·{" "}
-                  {result.ok ? "Ingested" : "Failed"}
+                  {result.pending
+                    ? "Dispatching…"
+                    : result.ok
+                      ? "Ingested"
+                      : "Failed"}
                 </span>
               </div>
             </motion.div>

@@ -10,6 +10,10 @@ interface Props {
 }
 
 const REEL_REPEAT = 8; // symbols stacked per reel for the spin blur
+const REEL_BASE_MS = 1200; // reel 0 spin duration
+const REEL_STAGGER_MS = 280; // added per reel index
+// Last reel (index 2) finishes at base + 2*stagger; small buffer for settle.
+const SPIN_SETTLE_MS = REEL_BASE_MS + 2 * REEL_STAGGER_MS + 120;
 
 function buildStrip(final: SlotSymbol): SlotSymbol[] {
   const strip: SlotSymbol[] = [];
@@ -48,8 +52,9 @@ export default function SlotMachine({ player, onCoins }: Props) {
     const finals = [spinReel(), spinReel(), spinReel()];
     setStrips(finals.map((f) => buildStrip(f)));
 
-    // Let the reels animate, then settle staggered.
-    await new Promise((r) => setTimeout(r, 1500));
+    // Wait for the LAST reel to visually settle before revealing the outcome.
+    // Must match the Reel transition: 1.2 + index * 0.28s (reel 2 = 1.76s).
+    await new Promise((r) => setTimeout(r, SPIN_SETTLE_MS));
 
     const outcome = evaluate(finals, bet);
     setResult({ text: outcome.label, kind: outcome.kind });
@@ -165,7 +170,7 @@ function Reel({
         transition={
           spinning
             ? {
-                duration: 1.2 + index * 0.28,
+                duration: (REEL_BASE_MS + index * REEL_STAGGER_MS) / 1000,
                 ease: [0.15, 0.6, 0.2, 1],
               }
             : { duration: 0 }

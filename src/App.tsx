@@ -6,7 +6,7 @@ import Blackjack from "./components/Blackjack";
 import OrchestrationFeed, { type FeedItem } from "./components/OrchestrationFeed";
 import FloorMap from "./components/FloorMap";
 import { PLAYERS, TIER_META, driftLocation, type Player } from "./lib/players";
-import { subscribe, emitEvent, getD360Config } from "./lib/events";
+import { subscribe, subscribeResult, emitEvent, getD360Config } from "./lib/events";
 
 type Mode = "slots" | "blackjack";
 
@@ -23,35 +23,54 @@ export default function App() {
     [players, activeId]
   );
 
-  // Subscribe to every emitted event → render in the feed.
+  // Subscribe to emitted events (render immediately) and to their D360 dispatch
+  // results (update the same feed row's status when the round-trip resolves).
   useEffect(() => {
-    return subscribe((event, result) => {
-      setFeed((f) => [{ event, result }, ...f].slice(0, 40));
+    const off1 = subscribe((event, pending) => {
+      setFeed((f) => [{ event, result: pending }, ...f].slice(0, 40));
     });
+    const off2 = subscribeResult((id, result) => {
+      setFeed((f) =>
+        f.map((item) => (item.event.id === id ? { ...item, result } : item))
+      );
+    });
+    return () => {
+      off1();
+      off2();
+    };
   }, []);
+
+  // Mirror mode + players in refs so the position interval can read current
+  // values without re-subscribing (and resetting its timer) on every change.
+  const modeRef = useRef<Mode>(mode);
+  modeRef.current = mode;
+  const playersRef = useRef<Player[]>(players);
+  playersRef.current = players;
 
   // Simulate live player positioning: periodically drift a random player and
   // emit a PLAYER_POSITION event so hosts can track movement in real time.
+  // The move is computed OUTSIDE setState (updaters must be pure — StrictMode
+  // double-invokes them, which would otherwise emit duplicate events).
   useEffect(() => {
     const id = setInterval(() => {
-      setPlayers((prev) => {
-        const i = Math.floor(Math.random() * prev.length);
-        const moved = { ...prev[i], location: driftLocation(prev[i].location) };
-        const next = [...prev];
-        next[i] = moved;
-        emitEvent({
-          type: "PLAYER_POSITION",
-          player: { id: moved.id, name: moved.name, tier: moved.tier },
-          game: mode === "slots" ? "SLOTS" : "BLACKJACK",
-          location: moved.location,
-          severity: "info",
-          message: `${moved.name} is now near ${moved.location.zone}.`,
-        });
-        return next;
+      const current = playersRef.current;
+      const i = Math.floor(Math.random() * current.length);
+      const moved = {
+        ...current[i],
+        location: driftLocation(current[i].location),
+      };
+      setPlayers((prev) => prev.map((p) => (p.id === moved.id ? moved : p)));
+      emitEvent({
+        type: "PLAYER_POSITION",
+        player: { id: moved.id, name: moved.name, tier: moved.tier },
+        game: modeRef.current === "slots" ? "SLOTS" : "BLACKJACK",
+        location: moved.location,
+        severity: "info",
+        message: `${moved.name} is now near ${moved.location.zone}.`,
       });
     }, 7000);
     return () => clearInterval(id);
-  }, [mode]);
+  }, []);
 
   const fireCoins = () => {
     const batch = Array.from({ length: 16 }, () => coinSeq.current++);
