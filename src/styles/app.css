@@ -1,0 +1,783 @@
+/* ==== App shell ========================================================== */
+.app {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.shell {
+  width: min(1360px, 94vw);
+  margin: 0 auto;
+  padding: 0 0 60px;
+  flex: 1;
+}
+
+/* ==== Top bar ============================================================= */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 22px clamp(16px, 4vw, 40px);
+  border-bottom: 1px solid var(--line-soft);
+  background: linear-gradient(180deg, rgba(28, 24, 17, 0.7), transparent);
+  backdrop-filter: blur(6px);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.brand img {
+  height: 40px;
+  filter: drop-shadow(0 2px 8px rgba(216, 169, 74, 0.25));
+}
+.brand .sep {
+  width: 1px;
+  height: 34px;
+  background: var(--line);
+}
+.brand .kicker {
+  font-family: var(--font-deco);
+  font-size: 15px;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: var(--champagne);
+}
+.brand .kicker small {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  color: var(--text-faint);
+  margin-top: 3px;
+}
+
+.status-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  border: 1px solid var(--line);
+  border-radius: 100px;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  background: rgba(10, 8, 6, 0.5);
+}
+.status-pill .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--felt-bright);
+  box-shadow: 0 0 10px 2px rgba(20, 82, 62, 0.8);
+  animation: pulse 2s infinite;
+}
+.status-pill.live .dot {
+  background: var(--crimson-bright);
+  box-shadow: 0 0 10px 2px rgba(181, 25, 47, 0.8);
+}
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+/* ==== Hero / mode switch ================================================= */
+.hero {
+  text-align: center;
+  padding: 46px 0 26px;
+}
+.hero .eyebrow {
+  font-size: 12px;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: var(--gold-bright);
+  margin-bottom: 14px;
+}
+.hero h1 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(38px, 6vw, 74px);
+  line-height: 0.98;
+  letter-spacing: 0.01em;
+}
+.hero p {
+  max-width: 560px;
+  margin: 16px auto 0;
+  color: var(--text-dim);
+  font-weight: 300;
+  line-height: 1.6;
+}
+
+.mode-switch {
+  display: inline-flex;
+  gap: 4px;
+  margin: 30px auto 0;
+  padding: 5px;
+  border: 1px solid var(--line);
+  border-radius: 100px;
+  background: rgba(10, 8, 6, 0.6);
+}
+.mode-switch button {
+  border: 0;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 13px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 11px 26px;
+  border-radius: 100px;
+  transition: color 0.3s;
+  position: relative;
+}
+.mode-switch button.active {
+  color: var(--ink);
+}
+.mode-switch .glider {
+  position: absolute;
+  inset: 5px auto 5px 5px;
+  border-radius: 100px;
+  background: var(--foil);
+  box-shadow: var(--glow-gold);
+  z-index: 0;
+}
+.mode-switch button span {
+  position: relative;
+  z-index: 1;
+}
+
+/* ==== Main layout ======================================================== */
+.stage {
+  display: grid;
+  grid-template-columns: 1.55fr 1fr;
+  gap: 26px;
+  align-items: start;
+  margin-top: 12px;
+}
+@media (max-width: 1040px) {
+  .stage {
+    grid-template-columns: 1fr;
+  }
+}
+
+.panel {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, rgba(28, 24, 17, 0.55), rgba(10, 8, 6, 0.75));
+  box-shadow: var(--shadow-lift);
+  padding: 26px;
+  position: relative;
+  overflow: hidden;
+}
+.panel-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.panel-title h2 {
+  font-size: 22px;
+  color: var(--champagne);
+  letter-spacing: 0.06em;
+}
+.panel-title .tag {
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+/* ==== Player selector ==================================================== */
+.player-strip {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+.player-chip {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 12px 7px 7px;
+  border: 1px solid var(--line-soft);
+  border-radius: 100px;
+  background: rgba(10, 8, 6, 0.5);
+  transition: border-color 0.25s, transform 0.25s;
+}
+.player-chip:hover {
+  transform: translateY(-2px);
+}
+.player-chip.active {
+  border-color: var(--gold);
+  box-shadow: var(--glow-gold);
+}
+.player-chip .avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-deco);
+  font-size: 13px;
+  color: var(--ink);
+  background: var(--foil-soft);
+}
+.player-chip .who {
+  text-align: left;
+  line-height: 1.1;
+}
+.player-chip .who b {
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--text);
+}
+.player-chip .who small {
+  display: block;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+/* ==== Slot machine ======================================================= */
+.slot {
+  --reel-h: 118px;
+  margin: 0 auto;
+  max-width: 560px;
+}
+.slot-cabinet {
+  border-radius: 26px;
+  padding: 26px 26px 20px;
+  background:
+    linear-gradient(180deg, #241d12, #0c0a07),
+    var(--ink);
+  border: 1px solid var(--line);
+  box-shadow: inset 0 1px 0 rgba(245, 226, 168, 0.15), var(--shadow-lift);
+  position: relative;
+}
+.slot-crown {
+  text-align: center;
+  font-family: var(--font-deco);
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  font-size: 13px;
+  color: var(--gold-bright);
+  margin-bottom: 16px;
+  text-shadow: 0 0 16px rgba(216, 169, 74, 0.5);
+}
+.reels {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  padding: 16px;
+  border-radius: 16px;
+  background: radial-gradient(120% 120% at 50% 0%, #1a150d, #060504);
+  border: 1px solid var(--line);
+  box-shadow: inset 0 8px 30px rgba(0, 0, 0, 0.9);
+}
+.reel {
+  height: var(--reel-h);
+  overflow: hidden;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #fbf6ea, #ded2b6);
+  position: relative;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+.reel::before,
+.reel::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 34px;
+  z-index: 2;
+  pointer-events: none;
+}
+.reel::before {
+  top: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.32), transparent);
+}
+.reel::after {
+  bottom: 0;
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0.32), transparent);
+}
+.reel-track {
+  display: flex;
+  flex-direction: column;
+}
+.reel-cell {
+  height: var(--reel-h);
+  display: grid;
+  place-items: center;
+  font-size: 62px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.25));
+}
+.payline {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 50%;
+  height: 2px;
+  transform: translateY(-50%);
+  background: linear-gradient(90deg, transparent, var(--crimson-bright), transparent);
+  z-index: 3;
+  opacity: 0.7;
+}
+
+.slot-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 20px;
+}
+.credit-read {
+  font-family: var(--font-deco);
+  color: var(--gold-bright);
+}
+.credit-read small {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.credit-read b {
+  font-size: 26px;
+  font-weight: 400;
+}
+
+.bet-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+.bet-row button {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: rgba(10, 8, 6, 0.6);
+  color: var(--gold-bright);
+  font-size: 15px;
+  line-height: 1;
+}
+.bet-row b {
+  color: var(--champagne);
+  font-size: 15px;
+  min-width: 54px;
+  text-align: center;
+}
+
+/* The lever / spin button */
+.spin-btn {
+  border: 0;
+  border-radius: 100px;
+  padding: 16px 42px;
+  font-family: var(--font-deco);
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  font-size: 15px;
+  color: var(--ink);
+  background: var(--foil);
+  box-shadow: var(--glow-gold), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transition: transform 0.15s, filter 0.2s;
+}
+.spin-btn:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.spin-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.spin-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.slot-result {
+  text-align: center;
+  margin-top: 16px;
+  min-height: 26px;
+  font-family: var(--font-deco);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 14px;
+}
+.slot-result.win {
+  color: var(--gold-bright);
+  text-shadow: 0 0 18px rgba(216, 169, 74, 0.6);
+}
+.slot-result.loss {
+  color: var(--text-faint);
+}
+.slot-result.jackpot {
+  color: #fff;
+  text-shadow: 0 0 24px rgba(216, 169, 74, 0.9);
+}
+
+/* ==== Blackjack ========================================================== */
+.bj-table {
+  border-radius: 24px;
+  padding: 26px;
+  background: radial-gradient(120% 120% at 50% 0%, var(--felt-bright), var(--felt) 70%, #072117);
+  border: 1px solid var(--line);
+  box-shadow: inset 0 6px 40px rgba(0, 0, 0, 0.55), var(--shadow-lift);
+  position: relative;
+}
+.bj-table::after {
+  content: "";
+  position: absolute;
+  inset: 14px;
+  border: 1px solid rgba(216, 169, 74, 0.22);
+  border-radius: 16px;
+  pointer-events: none;
+}
+.bj-arc {
+  text-align: center;
+  font-family: var(--font-deco);
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  font-size: 11px;
+  color: rgba(233, 220, 192, 0.75);
+  margin-bottom: 18px;
+}
+.bj-seat {
+  margin-bottom: 22px;
+}
+.bj-seat .seat-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--champagne);
+  margin-bottom: 10px;
+}
+.bj-seat .seat-label .score {
+  color: var(--gold-bright);
+  font-family: var(--font-deco);
+}
+.hand {
+  display: flex;
+  gap: 10px;
+  min-height: 96px;
+  flex-wrap: wrap;
+}
+.card {
+  width: 66px;
+  height: 92px;
+  border-radius: 9px;
+  background: linear-gradient(160deg, #fffdf8, #ece3d0);
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 7px 8px;
+  font-family: var(--font-deco);
+  color: #14110b;
+}
+.card.red {
+  color: var(--crimson-bright);
+}
+.card.back {
+  background:
+    repeating-linear-gradient(45deg, #12100b 0 6px, #1c1811 6px 12px);
+  border: 1px solid var(--gold-deep);
+}
+.card.back::after {
+  content: "◆";
+  margin: auto;
+  color: var(--gold);
+  font-size: 22px;
+}
+.card .rank {
+  font-size: 18px;
+  line-height: 1;
+}
+.card .suit {
+  font-size: 16px;
+  align-self: flex-end;
+}
+.card .pip {
+  align-self: center;
+  font-size: 30px;
+}
+
+.bj-controls {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 6px;
+}
+.bj-btn {
+  border: 1px solid var(--line);
+  background: rgba(10, 8, 6, 0.5);
+  color: var(--champagne);
+  border-radius: 100px;
+  padding: 12px 26px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-size: 12px;
+  transition: border-color 0.2s, transform 0.15s, background 0.2s;
+}
+.bj-btn:hover:not(:disabled) {
+  border-color: var(--gold);
+  transform: translateY(-2px);
+}
+.bj-btn.primary {
+  background: var(--foil);
+  color: var(--ink);
+  border-color: transparent;
+}
+.bj-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.bj-outcome {
+  text-align: center;
+  margin-top: 16px;
+  min-height: 24px;
+  font-family: var(--font-deco);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-size: 15px;
+  color: var(--gold-bright);
+}
+
+/* ==== Orchestration feed ================================================= */
+.side-col {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  position: sticky;
+  top: 96px;
+}
+.feed {
+  max-height: 420px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-right: 4px;
+}
+.feed-empty {
+  color: var(--text-faint);
+  font-size: 13px;
+  text-align: center;
+  padding: 30px 10px;
+  font-style: italic;
+}
+.event {
+  border: 1px solid var(--line-soft);
+  border-left: 3px solid var(--gold-deep);
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: rgba(10, 8, 6, 0.55);
+}
+.event.notable {
+  border-left-color: var(--gold-bright);
+}
+.event.critical {
+  border-left-color: var(--crimson-bright);
+  background: rgba(122, 17, 34, 0.12);
+}
+.event-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+.event-type {
+  font-family: var(--font-deco);
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--champagne);
+}
+.event-time {
+  font-size: 10px;
+  color: var(--text-faint);
+  letter-spacing: 0.1em;
+  font-variant-numeric: tabular-nums;
+}
+.event-msg {
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.45;
+}
+.event-meta {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+.event-meta span {
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 100px;
+  border: 1px solid var(--line-soft);
+  color: var(--text-faint);
+}
+.event-meta .ok {
+  color: var(--felt-bright);
+  border-color: rgba(20, 82, 62, 0.5);
+}
+.event-meta .amt-pos {
+  color: var(--gold-bright);
+  border-color: var(--line);
+}
+.event-meta .amt-neg {
+  color: var(--crimson-bright);
+  border-color: rgba(181, 25, 47, 0.4);
+}
+
+/* ==== Floor map ========================================================== */
+.floor {
+  aspect-ratio: 16 / 10;
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, rgba(20, 82, 62, 0.12), transparent),
+    repeating-linear-gradient(0deg, var(--line-soft) 0 1px, transparent 1px 44px),
+    repeating-linear-gradient(90deg, var(--line-soft) 0 1px, transparent 1px 44px),
+    var(--ink-2);
+  border: 1px solid var(--line);
+  position: relative;
+  overflow: hidden;
+}
+.zone-label {
+  position: absolute;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.blip {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  transition: left 1.2s ease, top 1.2s ease;
+}
+.blip::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  opacity: 0.5;
+  animation: ripple 2.4s ease-out infinite;
+}
+@keyframes ripple {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+.blip .tip {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  background: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 10px;
+  color: var(--text);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  z-index: 5;
+}
+.blip:hover .tip {
+  opacity: 1;
+}
+.blip .tip b {
+  color: var(--gold-bright);
+  font-weight: 500;
+}
+
+.host-legend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.host-legend .k {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.host-legend .sw {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+/* ==== Footer ============================================================= */
+.foot {
+  text-align: center;
+  padding: 40px 20px 24px;
+  color: var(--text-faint);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+/* ==== Coin burst overlay ================================================= */
+.burst {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 60;
+  overflow: hidden;
+}
+.coin {
+  position: absolute;
+  font-size: 26px;
+  animation: fall 1.6s ease-in forwards;
+}
+@keyframes fall {
+  0% {
+    transform: translateY(-40px) rotate(0deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(105vh) rotate(540deg);
+    opacity: 0.9;
+  }
+}

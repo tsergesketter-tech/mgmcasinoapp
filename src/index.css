@@ -1,0 +1,186 @@
+/* =========================================================================
+   MGM Host:Player — Design System
+   Art Deco Vegas luxury. Deep black, MGM gold (#B1812A), champagne, felt.
+   ========================================================================= */
+
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,600&family=Marcellus&family=Jost:wght@300;400;500;600&display=swap");
+
+:root {
+  /* Brand core */
+  --gold: #b1812a;
+  --gold-bright: #d8a94a;
+  --gold-deep: #8a6420;
+  --champagne: #e9dcc0;
+  --ink: #0a0806;
+  --ink-2: #12100b;
+  --ink-3: #1c1811;
+  --felt: #0e3b2e;
+  --felt-bright: #14523e;
+  --crimson: #7a1122;
+  --crimson-bright: #b5192f;
+
+  --line: rgba(177, 129, 42, 0.28);
+  --line-soft: rgba(177, 129, 42, 0.14);
+  --text: #f4ecdb;
+  --text-dim: #b7ab92;
+  --text-faint: #6f6753;
+
+  /* Gold foil gradient used across chrome, chips, headings */
+  --foil: linear-gradient(
+    135deg,
+    #8a6420 0%,
+    #d8a94a 22%,
+    #f5e2a8 40%,
+    #b1812a 58%,
+    #d8a94a 78%,
+    #7a5518 100%
+  );
+  --foil-soft: linear-gradient(135deg, #b1812a, #d8a94a 50%, #8a6420);
+
+  --shadow-lift: 0 24px 60px -20px rgba(0, 0, 0, 0.8);
+  --glow-gold: 0 0 22px rgba(216, 169, 74, 0.35);
+
+  --font-display: "Cormorant Garamond", Georgia, serif;
+  --font-deco: "Marcellus", Georgia, serif;
+  --font-body: "Jost", system-ui, sans-serif;
+
+  --radius: 14px;
+  --radius-lg: 22px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--text);
+  background: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+/* Atmospheric backdrop: radial gold pools + deco vignette + film grain */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background:
+    radial-gradient(
+      120% 90% at 50% -10%,
+      rgba(177, 129, 42, 0.14),
+      transparent 55%
+    ),
+    radial-gradient(80% 60% at 90% 110%, rgba(20, 82, 62, 0.16), transparent 60%),
+    radial-gradient(70% 60% at 8% 90%, rgba(122, 17, 34, 0.1), transparent 55%),
+    var(--ink);
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-deco);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  margin: 0;
+}
+
+/* Text stamped in gold foil */
+.foil-text {
+  background: var(--foil);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+button {
+  font-family: var(--font-body);
+  cursor: pointer;
+}
+
+/* Deco corner flourish — reusable frame accent */
+.deco-frame {
+  position: relative;
+}
+.deco-frame::before,
+.deco-frame::after {
+  content: "";
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--gold);
+  opacity: 0.7;
+}
+.deco-frame::before {
+  top: 8px;
+  left: 8px;
+  border-right: 0;
+  border-bottom: 0;
+}
+.deco-frame::after {
+  bottom: 8px;
+  right: 8px;
+  border-left: 0;
+  border-top: 0;
+}
+
+/* Thin gold divider with center diamond */
+.deco-rule {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--gold);
+}
+.deco-rule::before,
+.deco-rule::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  background: linear-gradient(90deg, transparent, var(--line), transparent);
+}
+
+::selection {
+  background: rgba(216, 169, 74, 0.3);
+  color: #fff;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--ink-2);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--gold-deep);
+  border-radius: 20px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
