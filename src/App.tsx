@@ -6,7 +6,7 @@ import Blackjack from "./components/Blackjack";
 import OrchestrationFeed, { type FeedItem } from "./components/OrchestrationFeed";
 import FloorMap from "./components/FloorMap";
 import { PLAYERS, TIER_META, movePlayer, type Player } from "./lib/players";
-import { subscribe, subscribeResult, emitEvent, getD360Config } from "./lib/events";
+import { subscribe, subscribeResult, emitEvent } from "./lib/events";
 
 type Mode = "slots" | "blackjack";
 
@@ -78,8 +78,6 @@ export default function App() {
     }, 1700);
   };
 
-  const live = getD360Config().live;
-
   return (
     <div className="app">
       <header className="topbar">
@@ -90,10 +88,6 @@ export default function App() {
             Host&nbsp;·&nbsp;Player
             <small>Real-Time Floor Orchestration</small>
           </span>
-        </div>
-        <div className={`status-pill ${live ? "live" : ""}`}>
-          <span className="dot" />
-          {live ? "Data 360 — Live" : "Data 360 — Simulation"}
         </div>
       </header>
 
