@@ -120,66 +120,139 @@ export default function SlotMachine({ player, onCoins }: Props) {
     busy.current = false;
   }, [bet, credits, player, spinning, onCoins, rig]);
 
+  const canSpin = !spinning && credits >= bet;
+  const won = (result?.win ?? 0) > 0;
+
   return (
     <div className="slot">
-      <div className="slot-cabinet deco-frame">
-        <div className="slot-crown">MGM Grand · High Limit</div>
-        <div className="reels">
-          {strips.map((strip, i) => (
-            <Reel key={i} strip={strip} spinning={spinning} index={i} />
-          ))}
-          <div className="payline" />
-        </div>
+      <div className={`machine ${spinning ? "running" : ""} ${won ? "paid" : ""}`}>
+        <div className="slot-cabinet deco-frame">
+          <div className="marquee" aria-hidden>
+            {Array.from({ length: 15 }, (_, i) => (
+              <span
+                className="bulb"
+                key={i}
+                style={{ ["--i" as string]: i }}
+              />
+            ))}
+          </div>
+          <div className="slot-crown">MGM Grand · High Limit</div>
 
-        <div className={`slot-result ${result?.kind ?? ""}`}>
-          {result ? (
-            <>
-              <span className="result-label">{result.text}</span>
-              {result.win > 0 ? (
-                <span className="result-amt">
-                  +${result.win.toLocaleString()}
-                </span>
-              ) : (
-                <span className="result-amt muted">−${bet}</span>
-              )}
-            </>
-          ) : (
-            <span className="result-hint">Match 3 to win big · any 2 pays back your bet</span>
-          )}
-        </div>
-
-        <div className="slot-controls">
-          <div className="credit-read">
-            <small>Credits</small>
-            <b>${credits.toLocaleString()}</b>
+          <div className="reel-window">
+            <span className="bolt tl" />
+            <span className="bolt tr" />
+            <span className="bolt bl" />
+            <span className="bolt br" />
+            <div className="reels">
+              {strips.map((strip, i) => (
+                <Reel key={i} strip={strip} spinning={spinning} index={i} />
+              ))}
+              <div className="payline" />
+            </div>
+            <span className="glass-sheen" aria-hidden />
           </div>
 
-          <div className="bet-row">
-            <button onClick={() => changeBet(-1)} disabled={spinning}>
-              −
+          <div className={`slot-result ${result?.kind ?? ""}`}>
+            {result ? (
+              <>
+                <span className="result-label">{result.text}</span>
+                {result.win > 0 ? (
+                  <span className="result-amt">
+                    +${result.win.toLocaleString()}
+                  </span>
+                ) : (
+                  <span className="result-amt muted">−${bet}</span>
+                )}
+              </>
+            ) : (
+              <span className="result-hint">
+                Match 3 to win big · any 2 pays back your bet
+              </span>
+            )}
+          </div>
+
+          <div className="slot-controls">
+            <div className="credit-read">
+              <small>Credits</small>
+              <b>${credits.toLocaleString()}</b>
+            </div>
+
+            <div className="bet-row">
+              <button onClick={() => changeBet(-1)} disabled={spinning}>
+                −
+              </button>
+              <span>
+                Bet <b>${bet}</b>
+              </span>
+              <button onClick={() => changeBet(1)} disabled={spinning}>
+                +
+              </button>
+            </div>
+
+            <button
+              className="spin-btn"
+              onClick={spin}
+              disabled={!canSpin}
+            >
+              {spinning ? "Spinning" : "Spin"}
             </button>
-            <span>
-              Bet <b>${bet}</b>
+          </div>
+
+          <div className={`coin-tray ${won ? "lit" : ""}`}>
+            <span className="tray-slot" />
+            <span className="tray-label">
+              {won ? `Paid $${result!.win.toLocaleString()}` : "Winner Paid Below"}
             </span>
-            <button onClick={() => changeBet(1)} disabled={spinning}>
-              +
-            </button>
+            <span className="tray-slot" />
           </div>
 
-          <button
-            className="spin-btn"
-            onClick={spin}
-            disabled={spinning || credits < bet}
-          >
-            {spinning ? "Spinning" : "Spin"}
-          </button>
+          <RigBar rig={rig} onRig={setRig} disabled={spinning} />
         </div>
 
-        <RigBar rig={rig} onRig={setRig} disabled={spinning} />
+        {/* The one-armed bandit lever — pull it to spin */}
+        <Lever spinning={spinning} disabled={!canSpin} onPull={spin} />
       </div>
 
       <Paytable bet={bet} />
     </div>
+  );
+}
+
+// The physical pull-lever bolted to the cabinet's right flank. Yanking it
+// down triggers the spin; it springs back with a little overshoot.
+function Lever({
+  spinning,
+  disabled,
+  onPull,
+}: {
+  spinning: boolean;
+  disabled: boolean;
+  onPull: () => void;
+}) {
+  return (
+    <button
+      className="lever"
+      onClick={onPull}
+      disabled={disabled}
+      aria-label="Pull to spin"
+      title="Pull to spin"
+    >
+      <span className="lever-mount" />
+      <motion.span
+        className="lever-arm"
+        initial={false}
+        animate={
+          spinning
+            ? { rotate: [0, 64, 58], originY: 1 }
+            : { rotate: 0 }
+        }
+        transition={{ duration: 0.55, ease: [0.22, 1.2, 0.4, 1] }}
+        style={{ transformOrigin: "50% 100%" }}
+      >
+        <span className="lever-rod" />
+        <span className="lever-knob" />
+      </motion.span>
+    </button>
   );
 }
 

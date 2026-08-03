@@ -330,19 +330,62 @@
 /* ==== Slot machine ======================================================= */
 .slot {
   --reel-h: 150px;
+  --brass: #c79a3f;
+  --brass-hi: #f0d693;
+  --brass-lo: #7a5818;
   margin: 0 auto;
   width: 100%;
-  max-width: 700px;
+  max-width: 720px;
+}
+/* Cabinet + protruding lever sit side by side. */
+.machine {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
 }
 .slot-cabinet {
-  border-radius: 28px;
-  padding: 32px 34px 26px;
+  flex: 1;
+  border-radius: 28px 28px 22px 22px;
+  padding: 20px 34px 26px;
   background:
-    linear-gradient(180deg, #241d12, #0c0a07),
+    linear-gradient(180deg, #2b2213 0%, #171106 42%, #0c0a07 100%),
     var(--ink);
   border: 1px solid var(--line);
-  box-shadow: inset 0 1px 0 rgba(245, 226, 168, 0.15), var(--shadow-lift);
+  box-shadow:
+    inset 0 1px 0 rgba(245, 226, 168, 0.18),
+    inset 0 0 0 2px rgba(122, 88, 24, 0.35),
+    inset 0 -18px 40px rgba(0, 0, 0, 0.55),
+    var(--shadow-lift);
   position: relative;
+  z-index: 2;
+}
+/* Chase-light marquee across the crown. */
+.marquee {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 6px 14px;
+}
+.bulb {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, var(--brass-hi), var(--brass) 55%, var(--brass-lo));
+  box-shadow: 0 0 6px rgba(216, 169, 74, 0.5);
+  opacity: 0.45;
+  animation: bulb-chase 1.4s linear infinite;
+  animation-delay: calc(var(--i) * 0.09s);
+}
+.machine.running .bulb {
+  animation-duration: 0.6s;
+}
+@keyframes bulb-chase {
+  0%, 100% { opacity: 0.35; box-shadow: 0 0 4px rgba(216, 169, 74, 0.3); }
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 12px rgba(240, 214, 147, 0.95), 0 0 22px rgba(216, 169, 74, 0.6);
+  }
 }
 .slot-crown {
   text-align: center;
@@ -351,15 +394,60 @@
   text-transform: uppercase;
   font-size: 16px;
   color: var(--gold-bright);
-  margin-bottom: 20px;
+  margin-bottom: 18px;
   text-shadow: 0 0 16px rgba(216, 169, 74, 0.5);
+}
+/* Brass-bezel reel window with corner bolts + curved glass. */
+.reel-window {
+  position: relative;
+  padding: 14px;
+  border-radius: 20px;
+  background: linear-gradient(160deg, #4a3a17, #2a2010 40%, #4a3a17 100%);
+  box-shadow:
+    inset 0 2px 4px rgba(245, 226, 168, 0.35),
+    inset 0 -3px 8px rgba(0, 0, 0, 0.7),
+    0 0 0 1px rgba(122, 88, 24, 0.6),
+    0 10px 26px rgba(0, 0, 0, 0.5);
+}
+.bolt {
+  position: absolute;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, var(--brass-hi), var(--brass) 45%, var(--brass-lo));
+  box-shadow: inset 0 -1px 1px rgba(0, 0, 0, 0.6), 0 1px 2px rgba(0, 0, 0, 0.5);
+  z-index: 4;
+}
+.bolt::after {
+  content: "";
+  position: absolute;
+  inset: 3.5px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.35), transparent);
+}
+.bolt.tl { top: 6px; left: 6px; }
+.bolt.tr { top: 6px; right: 6px; }
+.bolt.bl { bottom: 6px; left: 6px; }
+.bolt.br { bottom: 6px; right: 6px; }
+.glass-sheen {
+  position: absolute;
+  inset: 14px;
+  border-radius: 14px;
+  pointer-events: none;
+  z-index: 5;
+  background: linear-gradient(
+    118deg,
+    rgba(255, 255, 255, 0.16) 0%,
+    rgba(255, 255, 255, 0.05) 18%,
+    transparent 42%
+  );
 }
 .reels {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  padding: 18px;
-  border-radius: 16px;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 12px;
   background: radial-gradient(120% 120% at 50% 0%, #1a150d, #060504);
   border: 2px solid transparent;
   background-clip: padding-box;
@@ -367,6 +455,20 @@
     0 0 0 2px rgba(177, 129, 42, 0.35), 0 6px 20px rgba(177, 129, 42, 0.2);
   position: relative;
 }
+/* Divider posts between the three reels. */
+.reels::before,
+.reels::after {
+  content: "";
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  width: 2px;
+  background: linear-gradient(180deg, transparent, rgba(199, 154, 63, 0.5), transparent);
+  z-index: 4;
+  pointer-events: none;
+}
+.reels::before { left: calc(33.33% + 1px); }
+.reels::after { left: calc(66.66% - 1px); }
 .reel {
   height: var(--reel-h);
   overflow: hidden;
@@ -416,6 +518,20 @@
   background: linear-gradient(90deg, transparent, var(--crimson-bright), transparent);
   z-index: 3;
   opacity: 0.7;
+  transition: opacity 0.3s, box-shadow 0.3s;
+}
+.machine.paid .payline {
+  opacity: 1;
+  box-shadow: 0 0 12px 2px rgba(240, 214, 147, 0.7);
+  background: linear-gradient(90deg, transparent, var(--gold-bright), var(--gold-bright), transparent);
+  animation: payline-flash 0.5s ease-in-out 3;
+}
+@keyframes payline-flash {
+  50% { box-shadow: 0 0 20px 4px rgba(240, 214, 147, 0.95); }
+}
+/* Slight motion blur on the reels while spinning. */
+.machine.running .reel-cell {
+  filter: blur(0.6px) drop-shadow(0 2px 3px rgba(0, 0, 0, 0.25));
 }
 
 .slot-controls {
@@ -505,6 +621,123 @@
 .spin-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Payout tray along the bottom lip of the cabinet. */
+.coin-tray {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 9px 16px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #0a0805, #050403);
+  box-shadow:
+    inset 0 3px 8px rgba(0, 0, 0, 0.85),
+    inset 0 -1px 0 rgba(122, 88, 24, 0.3);
+  transition: box-shadow 0.3s;
+}
+.coin-tray .tray-slot {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(122, 88, 24, 0.35) 0 6px,
+    transparent 6px 12px
+  );
+}
+.coin-tray .tray-label {
+  font-family: var(--font-body);
+  font-size: 9.5px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  white-space: nowrap;
+  transition: color 0.3s, text-shadow 0.3s;
+}
+.coin-tray.lit {
+  box-shadow:
+    inset 0 3px 10px rgba(0, 0, 0, 0.85),
+    0 0 18px rgba(216, 169, 74, 0.35);
+}
+.coin-tray.lit .tray-label {
+  color: var(--gold-bright);
+  text-shadow: 0 0 12px rgba(216, 169, 74, 0.7);
+}
+
+/* ==== The pull lever ===================================================== */
+.lever {
+  position: relative;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  width: 54px;
+  margin-left: -8px;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  z-index: 1;
+}
+.lever:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+/* The ball-joint housing bolted to the cabinet side. */
+.lever-mount {
+  position: absolute;
+  left: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #6b5220, #2a2010 70%);
+  box-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.7), 0 2px 5px rgba(0, 0, 0, 0.5),
+    0 0 0 2px rgba(122, 88, 24, 0.5);
+  z-index: 2;
+}
+.lever-arm {
+  position: absolute;
+  left: 13px;
+  bottom: 50%;
+  width: 10px;
+  height: 96px;
+  display: block;
+  will-change: transform;
+}
+.lever-rod {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 10px;
+  height: 100%;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--brass-lo), var(--brass-hi) 45%, var(--brass) 60%, var(--brass-lo));
+  box-shadow: inset -1px 0 2px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+.lever-knob {
+  position: absolute;
+  left: 50%;
+  top: -8px;
+  transform: translateX(-50%);
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 28%, #ff8f7a, var(--crimson-bright) 45%, #7a1512 100%);
+  box-shadow:
+    inset 0 -3px 6px rgba(0, 0, 0, 0.5),
+    inset 0 3px 5px rgba(255, 255, 255, 0.35),
+    0 3px 8px rgba(0, 0, 0, 0.5),
+    0 0 14px rgba(220, 60, 50, 0.35);
+}
+.lever:not(:disabled):hover .lever-knob {
+  box-shadow:
+    inset 0 -3px 6px rgba(0, 0, 0, 0.5),
+    inset 0 3px 5px rgba(255, 255, 255, 0.45),
+    0 3px 8px rgba(0, 0, 0, 0.5),
+    0 0 20px rgba(220, 60, 50, 0.6);
 }
 
 .slot-result {
