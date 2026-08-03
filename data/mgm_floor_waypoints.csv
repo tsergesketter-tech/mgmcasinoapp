@@ -1,0 +1,6 @@
+waypointId,name,zoneId,x,y,connectsTo
+W-HLS,High Limit Slots,Z-HLS,22,30,W-BAR|W-MSF
+W-MSF,Main Slots Floor,Z-MSF,46,74,W-HLS|W-PIT3
+W-PIT3,Blackjack Pit 3,Z-BJ3,70,55,W-MSF|W-BAR|W-BAC
+W-BAC,Baccarat Salon,Z-BAC,80,22,W-BAR|W-PIT3
+W-BAR,Center Bar,Z-BAR,50,42,W-HLS|W-PIT3|W-BAC

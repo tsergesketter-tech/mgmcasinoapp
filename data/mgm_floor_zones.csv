@@ -1,0 +1,6 @@
+zoneId,name,category,x,y,width,height
+Z-HLS,High Limit Slots,SLOTS,6,12,34,34
+Z-MSF,Main Slots Floor,SLOTS,30,58,38,34
+Z-BJ3,Blackjack Pit 3,TABLES,58,44,26,24
+Z-BAC,Baccarat Salon,TABLES,68,10,26,24
+Z-BAR,Center Bar,AMENITY,42,34,18,16

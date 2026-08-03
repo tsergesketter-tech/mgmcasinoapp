@@ -1,4 +1,5 @@
 import type { FloorLocation, PlayerTier } from "./events";
+import { getWaypoint, nextWaypoint } from "./floor";
 
 export interface Player {
   id: string;
@@ -6,7 +7,17 @@ export interface Player {
   tier: PlayerTier;
   hostName: string;
   location: FloorLocation;
+  waypointId: string; // current anchor on the floor waypoint graph
   avatarSeed: string;
+}
+
+// Build a player's initial location from a waypoint, keeping the two in sync.
+function at(waypointId: string): { waypointId: string; location: FloorLocation } {
+  const w = getWaypoint(waypointId)!;
+  return {
+    waypointId,
+    location: { zone: w.name, x: w.x, y: w.y },
+  };
 }
 
 // A roster of high-value players a host would be tracking on the floor.
@@ -16,7 +27,7 @@ export const PLAYERS: Player[] = [
     name: "Vivian Cross",
     tier: "NOIR",
     hostName: "Marcus Webb",
-    location: { zone: "High Limit Slots", x: 22, y: 30 },
+    ...at("W-HLS"),
     avatarSeed: "vivian",
   },
   {
@@ -24,7 +35,7 @@ export const PLAYERS: Player[] = [
     name: "Desmond Rhee",
     tier: "Platinum",
     hostName: "Marcus Webb",
-    location: { zone: "Blackjack Pit 3", x: 68, y: 55 },
+    ...at("W-PIT3"),
     avatarSeed: "desmond",
   },
   {
@@ -32,7 +43,7 @@ export const PLAYERS: Player[] = [
     name: "Nadia Sokolov",
     tier: "Platinum",
     hostName: "Elena Ruiz",
-    location: { zone: "Baccarat Salon", x: 80, y: 22 },
+    ...at("W-BAC"),
     avatarSeed: "nadia",
   },
   {
@@ -40,7 +51,7 @@ export const PLAYERS: Player[] = [
     name: "Theo Marchetti",
     tier: "Gold",
     hostName: "Elena Ruiz",
-    location: { zone: "Main Slots Floor", x: 44, y: 72 },
+    ...at("W-MSF"),
     avatarSeed: "theo",
   },
   {
@@ -48,7 +59,7 @@ export const PLAYERS: Player[] = [
     name: "Priya Anand",
     tier: "Gold",
     hostName: "Marcus Webb",
-    location: { zone: "High Limit Slots", x: 30, y: 40 },
+    ...at("W-BAR"),
     avatarSeed: "priya",
   },
 ];
@@ -67,12 +78,20 @@ export function getPlayer(id: string): Player {
   return PLAYERS.find((p) => p.id === id) ?? PLAYERS[0];
 }
 
-// Nudge a player's floor coordinates a little, to simulate live movement.
-export function driftLocation(loc: FloorLocation): FloorLocation {
-  const clamp = (v: number) => Math.max(6, Math.min(94, v));
+// Move a player to an adjacent waypoint along the floor graph, with a small
+// random jitter so co-located players don't perfectly overlap. Returns the new
+// waypointId + location together so Player state stays consistent.
+export function movePlayer(
+  p: Player
+): { waypointId: string; location: FloorLocation } {
+  const next = nextWaypoint(p.waypointId);
+  const jitter = () => (Math.random() - 0.5) * 5;
   return {
-    ...loc,
-    x: clamp(loc.x + (Math.random() - 0.5) * 6),
-    y: clamp(loc.y + (Math.random() - 0.5) * 6),
+    waypointId: next.waypointId,
+    location: {
+      zone: next.name,
+      x: Math.max(4, Math.min(96, next.x + jitter())),
+      y: Math.max(4, Math.min(96, next.y + jitter())),
+    },
   };
 }

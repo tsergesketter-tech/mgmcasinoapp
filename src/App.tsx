@@ -5,7 +5,7 @@ import SlotMachine from "./components/SlotMachine";
 import Blackjack from "./components/Blackjack";
 import OrchestrationFeed, { type FeedItem } from "./components/OrchestrationFeed";
 import FloorMap from "./components/FloorMap";
-import { PLAYERS, TIER_META, driftLocation, type Player } from "./lib/players";
+import { PLAYERS, TIER_META, movePlayer, type Player } from "./lib/players";
 import { subscribe, subscribeResult, emitEvent, getD360Config } from "./lib/events";
 
 type Mode = "slots" | "blackjack";
@@ -55,10 +55,7 @@ export default function App() {
     const id = setInterval(() => {
       const current = playersRef.current;
       const i = Math.floor(Math.random() * current.length);
-      const moved = {
-        ...current[i],
-        location: driftLocation(current[i].location),
-      };
+      const moved = { ...current[i], ...movePlayer(current[i]) };
       setPlayers((prev) => prev.map((p) => (p.id === moved.id ? moved : p)));
       emitEvent({
         type: "PLAYER_POSITION",
