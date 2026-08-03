@@ -24,7 +24,10 @@ export default function Blackjack({ player, onCoins }: Props) {
   const [phase, setPhase] = useState<Phase>("idle");
   const [outcome, setOutcome] = useState<string>("");
   const [bankroll, setBankroll] = useState(5000);
-  const bet = 100;
+  const [bet, setBet] = useState(100);
+
+  const changeBet = (dir: number) =>
+    setBet((b) => Math.min(1000, Math.max(50, b + dir * 50)));
 
   const pv = useMemo(() => handValue(player_), [player_]);
   const dv = useMemo(() => handValue(dealer), [dealer]);
@@ -45,7 +48,7 @@ export default function Blackjack({ player, onCoins }: Props) {
     } else {
       setPhase("player");
     }
-  }, []);
+  }, [bet]);
 
   const hit = useCallback(() => {
     if (phase !== "player") return;
@@ -57,7 +60,7 @@ export default function Blackjack({ player, onCoins }: Props) {
       setPhase("done");
       settle(next, dealer, false);
     }
-  }, [deck, player_, dealer, phase]);
+  }, [deck, player_, dealer, phase, bet]);
 
   const stand = useCallback(() => {
     if (phase !== "player") return;
@@ -69,7 +72,7 @@ export default function Blackjack({ player, onCoins }: Props) {
     setDealerHand(dh);
     setPhase("done");
     settle(player_, dh, false);
-  }, [deck, dealer, player_, phase]);
+  }, [deck, dealer, player_, phase, bet]);
 
   function settle(ph: TCard[], dh: TCard[], playerBJ: boolean) {
     const p = handValue(ph);
@@ -161,9 +164,49 @@ export default function Blackjack({ player, onCoins }: Props) {
         </div>
       </div>
 
+      <div className="bj-wager">
+        <span className="wager-label">Wager</span>
+        <div className="bet-row">
+          <button
+            onClick={() => changeBet(-1)}
+            disabled={phase === "player" || phase === "dealer" || bet <= 50}
+            aria-label="Lower wager"
+          >
+            −
+          </button>
+          <span>
+            <b>${bet}</b>
+          </span>
+          <button
+            onClick={() => changeBet(1)}
+            disabled={phase === "player" || phase === "dealer" || bet >= 1000}
+            aria-label="Raise wager"
+          >
+            +
+          </button>
+        </div>
+        <div className="chip-rail" aria-hidden>
+          {[50, 100, 250, 500].map((c) => (
+            <button
+              key={c}
+              className={`chip c${c} ${bet === c ? "on" : ""}`}
+              onClick={() => setBet(c)}
+              disabled={phase === "player" || phase === "dealer"}
+              aria-label={`Set wager to $${c}`}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="bj-controls">
         {phase === "idle" || phase === "done" ? (
-          <button className="bj-btn primary" onClick={deal}>
+          <button
+            className="bj-btn primary"
+            onClick={deal}
+            disabled={bet > bankroll}
+          >
             Deal
           </button>
         ) : (

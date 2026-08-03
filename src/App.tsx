@@ -12,6 +12,7 @@ type Mode = "slots" | "blackjack";
 
 export default function App() {
   const [mode, setMode] = useState<Mode>("slots");
+  const [railTab, setRailTab] = useState<"feed" | "floor">("feed");
   const [activeId, setActiveId] = useState(PLAYERS[0].id);
   const [players, setPlayers] = useState<Player[]>(PLAYERS);
   const [feed, setFeed] = useState<FeedItem[]>([]);
@@ -96,11 +97,23 @@ export default function App() {
         </div>
       </header>
 
-      <div className="shell">
-        {/* Game front-and-center */}
-        <section className="game-stage">
-          <div className="game-controls-bar">
-            <div className="mode-switch" role="tablist" aria-label="Game mode">
+      <div className="shell floor-layout">
+        {/* The physical machine — game is a screen inset in the cabinet */}
+        <section className="cabinet">
+          <div className="cab-topper">
+            <div className="topper-lights" aria-hidden>
+              {Array.from({ length: 22 }, (_, i) => (
+                <span className="bulb" key={i} style={{ ["--i" as string]: i }} />
+              ))}
+            </div>
+            <div className="topper-face">
+              <img src="/mgm-logo.png" alt="MGM Resorts International" />
+              <span className="topper-title">Grand · High Limit</span>
+            </div>
+          </div>
+
+          <div className="cab-body">
+            <div className="cab-mode" role="tablist" aria-label="Game mode">
               <button
                 role="tab"
                 aria-selected={mode === "slots"}
@@ -125,40 +138,77 @@ export default function App() {
               </button>
             </div>
 
-            <PlayerStrip
-              players={players}
-              activeId={activeId}
-              onSelect={setActiveId}
-            />
+            <div className="cab-screen">
+              <span className="screen-scan" aria-hidden />
+              <span className="screen-glare" aria-hidden />
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={mode}
+                  className="game-mount"
+                  initial={{ opacity: 0, y: 14, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -14 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  {mode === "slots" ? (
+                    <SlotMachine player={activePlayer} onCoins={fireCoins} />
+                  ) : (
+                    <Blackjack player={activePlayer} onCoins={fireCoins} />
+                  )}
+                </motion.div>
+              </AnimatePresence>
+            </div>
+
+            <div className="cab-deck">
+              <span className="deck-label">Player Card</span>
+              <PlayerStrip
+                players={players}
+                activeId={activeId}
+                onSelect={setActiveId}
+              />
+            </div>
           </div>
 
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={mode}
-              className="game-mount"
-              initial={{ opacity: 0, y: 14, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -14 }}
-              transition={{ duration: 0.3 }}
-            >
-              {mode === "slots" ? (
-                <SlotMachine player={activePlayer} onCoins={fireCoins} />
-              ) : (
-                <Blackjack player={activePlayer} onCoins={fireCoins} />
-              )}
-            </motion.div>
-          </AnimatePresence>
+          <div className="cab-base" aria-hidden>
+            <span className="base-vent" />
+            <span className="base-plate">MGM RESORTS INTERNATIONAL</span>
+            <span className="base-vent" />
+          </div>
         </section>
 
-        {/* Real-time orchestration context, secondary */}
-        <div className="side-grid">
-          <OrchestrationFeed items={feed} />
-          <FloorMap
-            players={players}
-            activeId={activeId}
-            onSelect={setActiveId}
-          />
-        </div>
+        {/* Right rail: real-time orchestration context, tabbed */}
+        <aside className="rail">
+          <div className="rail-tabs" role="tablist" aria-label="Floor context">
+            <button
+              role="tab"
+              aria-selected={railTab === "feed"}
+              className={railTab === "feed" ? "active" : ""}
+              onClick={() => setRailTab("feed")}
+            >
+              Event Stream
+              {feed.length > 0 && <span className="rail-count">{feed.length}</span>}
+            </button>
+            <button
+              role="tab"
+              aria-selected={railTab === "floor"}
+              className={railTab === "floor" ? "active" : ""}
+              onClick={() => setRailTab("floor")}
+            >
+              Live Floor
+            </button>
+          </div>
+          <div className="rail-content">
+            {railTab === "feed" ? (
+              <OrchestrationFeed items={feed} />
+            ) : (
+              <FloorMap
+                players={players}
+                activeId={activeId}
+                onSelect={setActiveId}
+              />
+            )}
+          </div>
+        </aside>
       </div>
 
       <footer className="foot">

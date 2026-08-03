@@ -169,40 +169,331 @@
   z-index: 1;
 }
 
-/* ==== Main layout ======================================================== */
-/* Game front-and-center */
-.game-stage {
+/* ==== Main layout — floor-standing cabinet + right rail ================== */
+.floor-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 384px;
+  gap: 30px;
+  align-items: stretch;
+  padding-top: 28px;
+  min-height: calc(100vh - 96px); /* fill down to the bottom of the page */
+}
+@media (max-width: 1080px) {
+  .floor-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---- The physical machine ---------------------------------------------- */
+.cabinet {
+  display: flex;
+  flex-direction: column;
+  border-radius: 34px 34px 18px 18px;
+  background:
+    linear-gradient(180deg, #2c2313 0%, #1a1409 34%, #0e0b07 100%);
+  border: 1px solid var(--line);
+  box-shadow:
+    inset 0 2px 0 rgba(245, 226, 168, 0.22),
+    inset 0 0 0 2px rgba(122, 88, 24, 0.4),
+    inset 0 0 90px rgba(0, 0, 0, 0.7),
+    0 50px 120px -30px rgba(0, 0, 0, 0.95);
+  position: relative;
+  overflow: hidden;
+}
+/* Sculpted brass side pillars */
+.cabinet::before,
+.cabinet::after {
+  content: "";
+  position: absolute;
+  top: 96px;
+  bottom: 64px;
+  width: 14px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--brass-lo), var(--brass-hi) 45%, var(--brass) 62%, var(--brass-lo));
+  box-shadow: inset -1px 0 2px rgba(0, 0, 0, 0.5), 0 0 14px rgba(199, 154, 63, 0.18);
+  z-index: 3;
+  pointer-events: none;
+}
+.cabinet::before { left: 14px; }
+.cabinet::after { right: 14px; }
+
+/* Illuminated topper */
+.cab-topper {
+  padding: 20px 40px 18px;
+  background:
+    radial-gradient(120% 160% at 50% -30%, rgba(216, 169, 74, 0.28), transparent 60%),
+    linear-gradient(180deg, #1e1811, #120d07);
+  border-bottom: 1px solid rgba(122, 88, 24, 0.5);
+  box-shadow: inset 0 -14px 30px rgba(0, 0, 0, 0.6);
+}
+.topper-lights {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  padding: 0 6px;
+}
+.topper-face {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 34px 0 20px;
+  gap: 8px;
 }
-.game-controls-bar {
+.topper-face img {
+  height: 42px;
+  filter: drop-shadow(0 2px 12px rgba(216, 169, 74, 0.45));
+}
+.topper-title {
+  font-family: var(--font-deco);
+  letter-spacing: 0.5em;
+  text-transform: uppercase;
+  font-size: 13px;
+  color: var(--gold-bright);
+  text-shadow: 0 0 18px rgba(216, 169, 74, 0.6);
+  padding-left: 0.5em;
+}
+
+/* Machine body wraps the screen + controls */
+.cab-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 24px clamp(34px, 6%, 70px) 8px;
+}
+.cab-mode {
+  display: inline-flex;
+  gap: 4px;
+  padding: 5px;
+  border: 1px solid var(--line);
+  border-radius: 100px;
+  background: rgba(6, 5, 3, 0.7);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+.cab-mode button {
+  border: 0;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 13px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 10px 30px;
+  border-radius: 100px;
+  transition: color 0.3s;
+  position: relative;
+  cursor: pointer;
+}
+.cab-mode button.active {
+  color: var(--ink);
+}
+.cab-mode button span {
+  position: relative;
+  z-index: 1;
+}
+
+/* The recessed glass SCREEN that holds the game */
+.cab-screen {
+  position: relative;
+  width: 100%;
+  max-width: 760px;
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-wrap: wrap;
-  gap: 14px 22px;
-  margin-bottom: 26px;
+  padding: 26px;
+  border-radius: 20px;
+  background:
+    radial-gradient(130% 120% at 50% 0%, #14100a, #060504 78%);
+  box-shadow:
+    inset 0 0 0 3px rgba(122, 88, 24, 0.55),
+    inset 0 0 0 5px rgba(0, 0, 0, 0.8),
+    inset 0 10px 50px rgba(0, 0, 0, 0.9),
+    0 0 40px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+/* Curved glass glare + faint CRT scanlines for screen realism */
+.screen-glare {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+  background: linear-gradient(
+    122deg,
+    rgba(255, 255, 255, 0.09) 0%,
+    rgba(255, 255, 255, 0.02) 16%,
+    transparent 40%
+  );
+  border-radius: 20px;
+}
+.screen-scan {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  opacity: 0.5;
+  background: repeating-linear-gradient(
+    180deg,
+    transparent 0 2px,
+    rgba(0, 0, 0, 0.16) 2px 4px
+  );
+  border-radius: 20px;
 }
 .game-mount {
   width: 100%;
   display: flex;
   justify-content: center;
+  position: relative;
+  z-index: 2;
 }
 
-/* Secondary orchestration context below the game */
-.side-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 26px;
-  align-items: start;
-  margin-top: 8px;
+/* Control deck with the player-card reader */
+.cab-deck {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  max-width: 760px;
+  margin-top: 4px;
+  padding: 16px 22px;
+  border-radius: 14px 14px 8px 8px;
+  background: linear-gradient(180deg, #201910, #0d0a06);
+  box-shadow:
+    inset 0 2px 0 rgba(245, 226, 168, 0.12),
+    inset 0 -10px 24px rgba(0, 0, 0, 0.6);
+  border-top: 1px solid rgba(122, 88, 24, 0.4);
 }
-@media (max-width: 900px) {
-  .side-grid {
-    grid-template-columns: 1fr;
-  }
+.deck-label {
+  font-size: 9.5px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+/* Base pedestal */
+.cab-base {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 44px 20px;
+  background: linear-gradient(180deg, #0c0906, #050403);
+  box-shadow: inset 0 12px 24px rgba(0, 0, 0, 0.7);
+}
+.base-vent {
+  flex: 1;
+  height: 10px;
+  border-radius: 4px;
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(122, 88, 24, 0.3) 0 5px,
+    transparent 5px 12px
+  );
+}
+.base-plate {
+  font-size: 9px;
+  letter-spacing: 0.34em;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+/* ---- Right rail (tabbed feed / floor) ---------------------------------- */
+.rail {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.rail-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.rail-tabs button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  background: rgba(10, 8, 6, 0.5);
+  color: var(--text-dim);
+  font-family: var(--font-deco);
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.25s, border-color 0.25s, background 0.25s;
+}
+.rail-tabs button:hover {
+  color: var(--gold-bright);
+}
+.rail-tabs button.active {
+  color: var(--ink);
+  background: var(--foil);
+  border-color: var(--gold-bright);
+  box-shadow: var(--glow-gold);
+}
+.rail-count {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  display: inline-grid;
+  place-items: center;
+  font-family: var(--font-body);
+  font-size: 10px;
+  letter-spacing: 0;
+  background: rgba(0, 0, 0, 0.28);
+  color: inherit;
+}
+.rail-tabs button:not(.active) .rail-count {
+  background: rgba(199, 154, 63, 0.16);
+  color: var(--gold-bright);
+}
+.rail-content {
+  flex: 1;
+  display: flex;
+}
+.rail-content > .panel {
+  flex: 1;
+  width: 100%;
+}
+
+/* Shared glider pill for both the cabinet mode switch and legacy switch */
+.cab-mode .glider {
+  position: absolute;
+  inset: 5px;
+  border-radius: 100px;
+  background: var(--foil);
+  box-shadow: var(--glow-gold);
+  z-index: 0;
+}
+
+/* ---- The game inside the screen: flatten its own cabinet chrome so it
+   reads as screen graphics, not a second machine. The chassis topper
+   already carries the branding + marquee. ------------------------------- */
+.cab-screen .marquee,
+.cab-screen .slot-crown,
+.cab-screen .lever {
+  display: none;
+}
+.cab-screen .slot {
+  max-width: 620px;
+}
+.cab-screen .slot-cabinet {
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0;
+}
+.cab-screen .machine {
+  filter: drop-shadow(0 0 22px rgba(216, 169, 74, 0.12));
+}
+/* Blackjack felt also sits flat on the screen */
+.cab-screen .bj-table {
+  box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.55);
 }
 
 .panel {
@@ -1082,11 +1373,64 @@
   font-size: 30px;
 }
 
+/* ---- Variable wager ---------------------------------------------------- */
+.bj-wager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line-soft);
+}
+.bj-wager .wager-label {
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.chip-rail {
+  display: flex;
+  gap: 8px;
+}
+.chip {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-family: var(--font-deco);
+  font-size: 12px;
+  color: #fff;
+  cursor: pointer;
+  position: relative;
+  border: 2px dashed rgba(255, 255, 255, 0.55);
+  box-shadow: 0 3px 7px rgba(0, 0, 0, 0.5), inset 0 0 0 4px rgba(0, 0, 0, 0.12);
+  transition: transform 0.15s, box-shadow 0.2s, filter 0.2s;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+.chip.c50 { background: radial-gradient(circle at 50% 40%, #3a6f4f, #17422f); }
+.chip.c100 { background: radial-gradient(circle at 50% 40%, #2b2f3d, #0e1119); }
+.chip.c250 { background: radial-gradient(circle at 50% 40%, #4a6285, #1f2d45); }
+.chip.c500 { background: radial-gradient(circle at 50% 40%, #8a2530, #4a0f16); }
+.chip:hover:not(:disabled) {
+  transform: translateY(-3px);
+}
+.chip.on {
+  border-color: var(--gold-bright);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.6), var(--glow-gold),
+    inset 0 0 0 4px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+.chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .bj-controls {
   display: flex;
   gap: 10px;
   justify-content: center;
-  margin-top: 6px;
+  margin-top: 14px;
 }
 .bj-btn {
   border: 1px solid var(--line);
