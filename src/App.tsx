@@ -175,10 +175,10 @@ export default function App() {
               style={{
                 left: `${Math.random() * 100}%`,
                 animationDelay: `${Math.random() * 0.4}s`,
+                ["--drift" as string]: `${(Math.random() - 0.5) * 120}px`,
+                ["--spin" as string]: `${Math.random() > 0.5 ? 1 : -1}`,
               }}
-            >
-              {Math.random() > 0.5 ? "🪙" : "💰"}
-            </span>
+            />
           ))}
         </div>
       )}

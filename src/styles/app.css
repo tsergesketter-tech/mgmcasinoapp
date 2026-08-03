@@ -624,10 +624,18 @@
   min-width: 0;
 }
 .pay-glyphs {
-  font-size: 22px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
   line-height: 1;
-  letter-spacing: 2px;
   white-space: nowrap;
+}
+.pay-any {
+  margin-left: 4px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
 }
 .pay-name {
   font-size: 13px;
@@ -683,6 +691,62 @@
 }
 .paytable-legend .lg.big {
   color: var(--champagne);
+}
+
+/* ==== Demo rig bar ======================================================= */
+.rig-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--line-soft);
+  flex-wrap: wrap;
+}
+.rig-label {
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  padding: 2px 8px;
+  border: 1px solid var(--line-soft);
+  border-radius: 999px;
+}
+.rig-btn {
+  font-family: var(--font-body);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--line-soft);
+  border-radius: 7px;
+  padding: 5px 11px;
+  cursor: pointer;
+  transition: color 0.18s, border-color 0.18s, background 0.18s;
+}
+.rig-btn:hover:not(:disabled) {
+  color: var(--gold-bright);
+  border-color: var(--gold-dim);
+}
+.rig-btn.on {
+  color: #0d0a05;
+  background: linear-gradient(180deg, var(--gold-bright), var(--gold-dim));
+  border-color: var(--gold-bright);
+  font-weight: 600;
+}
+.rig-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.rig-hint {
+  margin-left: auto;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.rig-bar.armed .rig-hint {
+  color: var(--gold-bright);
 }
 
 /* ==== Blackjack ========================================================== */
@@ -1110,19 +1174,37 @@
 }
 .coin {
   position: absolute;
-  font-size: 26px;
-  animation: fall 1.6s ease-in forwards;
+  top: -40px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 34% 30%, #fbe9b6, transparent 55%),
+    conic-gradient(from 210deg, #8a6420, #f0d693 25%, #c79a3f 50%, #f6e2a6 72%, #8a6420);
+  box-shadow:
+    inset 0 0 0 2px rgba(122, 88, 24, 0.55),
+    inset 0 0 5px rgba(255, 240, 200, 0.5),
+    0 1px 4px rgba(0, 0, 0, 0.4);
+  animation: fall 1.6s cubic-bezier(0.4, 0.1, 0.7, 1) forwards;
+}
+.coin::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  border: 1px solid rgba(122, 88, 24, 0.5);
 }
 @keyframes fall {
   0% {
-    transform: translateY(-40px) rotate(0deg);
+    transform: translate(0, 0) rotateY(0deg) scale(0.6);
     opacity: 0;
   }
   15% {
     opacity: 1;
   }
   100% {
-    transform: translateY(105vh) rotate(540deg);
-    opacity: 0.9;
+    transform: translate(var(--drift, 0px), 105vh)
+      rotateY(calc(var(--spin, 1) * 900deg)) scale(1);
+    opacity: 0.85;
   }
 }

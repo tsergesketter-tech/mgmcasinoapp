@@ -3,13 +3,16 @@ import { motion } from "framer-motion";
 import {
   SYMBOLS,
   spinReel,
+  riggedReels,
   evaluate,
   symbolOdds,
   BIG_WIN_MULTIPLE,
   type SlotSymbol,
+  type RigTarget,
 } from "../lib/slots";
 import { emitEvent } from "../lib/events";
 import type { Player } from "../lib/players";
+import SlotGlyph from "./SlotGlyph";
 
 interface Props {
   player: Player;
@@ -45,6 +48,8 @@ export default function SlotMachine({ player, onCoins }: Props) {
     kind: string;
     win: number;
   } | null>(null);
+  // Demo rig: when set, the NEXT spin lands on this outcome, then clears.
+  const [rig, setRig] = useState<RigTarget>(null);
   const busy = useRef(false);
 
   const changeBet = (dir: number) => {
@@ -58,7 +63,10 @@ export default function SlotMachine({ player, onCoins }: Props) {
     setResult(null);
     setCredits((c) => c - bet);
 
-    const finals = [spinReel(), spinReel(), spinReel()];
+    const finals = rig
+      ? riggedReels(rig)
+      : [spinReel(), spinReel(), spinReel()];
+    setRig(null); // consume the rig — one spin only
     setStrips(finals.map((f) => buildStrip(f)));
 
     // Wait for the LAST reel to visually settle before revealing the outcome.
@@ -110,7 +118,7 @@ export default function SlotMachine({ player, onCoins }: Props) {
 
     setSpinning(false);
     busy.current = false;
-  }, [bet, credits, player, spinning, onCoins]);
+  }, [bet, credits, player, spinning, onCoins, rig]);
 
   return (
     <div className="slot">
@@ -166,9 +174,50 @@ export default function SlotMachine({ player, onCoins }: Props) {
             {spinning ? "Spinning" : "Spin"}
           </button>
         </div>
+
+        <RigBar rig={rig} onRig={setRig} disabled={spinning} />
       </div>
 
       <Paytable bet={bet} />
+    </div>
+  );
+}
+
+// Presenter control: arm the next spin to a chosen outcome so orchestration
+// events fire on cue during a live demo. Clicking again disarms it.
+const RIG_OPTIONS: { key: Exclude<RigTarget, null>; label: string }[] = [
+  { key: "jackpot", label: "Jackpot" },
+  { key: "bigwin", label: "Big Win" },
+  { key: "pair", label: "Pair" },
+  { key: "loss", label: "Loss" },
+];
+
+function RigBar({
+  rig,
+  onRig,
+  disabled,
+}: {
+  rig: RigTarget;
+  onRig: (t: RigTarget) => void;
+  disabled: boolean;
+}) {
+  return (
+    <div className={`rig-bar ${rig ? "armed" : ""}`}>
+      <span className="rig-label">Demo</span>
+      {RIG_OPTIONS.map((o) => (
+        <button
+          key={o.key}
+          className={`rig-btn ${rig === o.key ? "on" : ""}`}
+          onClick={() => onRig(rig === o.key ? null : o.key)}
+          disabled={disabled}
+          aria-pressed={rig === o.key}
+        >
+          {o.label}
+        </button>
+      ))}
+      <span className="rig-hint">
+        {rig ? "Next spin is rigged" : "Force the next spin"}
+      </span>
     </div>
   );
 }
@@ -197,9 +246,9 @@ function Paytable({ bet }: { bet: number }) {
             >
               <span className="pay-combo">
                 <span className="pay-glyphs">
-                  {s.glyph}
-                  {s.glyph}
-                  {s.glyph}
+                  <SlotGlyph id={s.id} size={26} />
+                  <SlotGlyph id={s.id} size={26} />
+                  <SlotGlyph id={s.id} size={26} />
                 </span>
                 <span className="pay-name">
                   {jackpot ? "MGM Jackpot" : `${s.name} Triple`}
@@ -216,7 +265,11 @@ function Paytable({ bet }: { bet: number }) {
 
         <div className="pay-row minor">
           <span className="pay-combo">
-            <span className="pay-glyphs">🍒🍒 ·</span>
+            <span className="pay-glyphs">
+              <SlotGlyph id="cherry" size={26} />
+              <SlotGlyph id="cherry" size={26} />
+              <span className="pay-any">+ any</span>
+            </span>
             <span className="pay-name">Any Matching Pair</span>
           </span>
           <span className="pay-odds">frequent</span>
@@ -263,7 +316,7 @@ function Reel({
       >
         {strip.map((s, i) => (
           <div className="reel-cell" key={i}>
-            {s.glyph}
+            <SlotGlyph id={s.id} size={92} />
           </div>
         ))}
       </motion.div>
