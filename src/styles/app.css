@@ -170,15 +170,37 @@
 }
 
 /* ==== Main layout ======================================================== */
-.stage {
+/* Game front-and-center */
+.game-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 34px 0 20px;
+}
+.game-controls-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 14px 22px;
+  margin-bottom: 26px;
+}
+.game-mount {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+/* Secondary orchestration context below the game */
+.side-grid {
   display: grid;
-  grid-template-columns: 1.55fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 26px;
   align-items: start;
-  margin-top: 12px;
+  margin-top: 8px;
 }
-@media (max-width: 1040px) {
-  .stage {
+@media (max-width: 900px) {
+  .side-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -206,7 +228,7 @@
   background: linear-gradient(90deg, transparent, var(--gold-bright), transparent);
   opacity: 0.6;
 }
-.side-col .panel:nth-child(2) {
+.side-grid .panel:nth-child(2) {
   animation-delay: 0.12s;
 }
 @keyframes rise-in {
@@ -247,7 +269,18 @@
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
-  margin-bottom: 22px;
+  justify-content: center;
+}
+/* Divider between the mode switch and the player selector in the control bar */
+.game-controls-bar .player-strip {
+  padding-left: 22px;
+  border-left: 1px solid var(--line-soft);
+}
+@media (max-width: 640px) {
+  .game-controls-bar .player-strip {
+    padding-left: 0;
+    border-left: 0;
+  }
 }
 .player-chip {
   display: flex;
@@ -296,13 +329,14 @@
 
 /* ==== Slot machine ======================================================= */
 .slot {
-  --reel-h: 118px;
+  --reel-h: 150px;
   margin: 0 auto;
-  max-width: 560px;
+  width: 100%;
+  max-width: 700px;
 }
 .slot-cabinet {
-  border-radius: 26px;
-  padding: 26px 26px 20px;
+  border-radius: 28px;
+  padding: 32px 34px 26px;
   background:
     linear-gradient(180deg, #241d12, #0c0a07),
     var(--ink);
@@ -313,11 +347,11 @@
 .slot-crown {
   text-align: center;
   font-family: var(--font-deco);
-  letter-spacing: 0.4em;
+  letter-spacing: 0.42em;
   text-transform: uppercase;
-  font-size: 13px;
+  font-size: 16px;
   color: var(--gold-bright);
-  margin-bottom: 16px;
+  margin-bottom: 20px;
   text-shadow: 0 0 16px rgba(216, 169, 74, 0.5);
 }
 .reels {
@@ -368,7 +402,7 @@
   height: var(--reel-h);
   display: grid;
   place-items: center;
-  font-size: 62px;
+  font-size: 80px;
   line-height: 1;
   filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.25));
 }
@@ -474,24 +508,181 @@
 }
 
 .slot-result {
-  text-align: center;
-  margin-top: 16px;
-  min-height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin: 16px 0 4px;
+  min-height: 34px;
   font-family: var(--font-deco);
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  font-size: 14px;
+  font-size: 16px;
 }
-.slot-result.win {
+.slot-result .result-label {
+  color: var(--text-dim);
+}
+.slot-result .result-amt {
+  font-size: 22px;
   color: var(--gold-bright);
-  text-shadow: 0 0 18px rgba(216, 169, 74, 0.6);
+  text-shadow: 0 0 18px rgba(216, 169, 74, 0.5);
 }
-.slot-result.loss {
+.slot-result .result-amt.muted {
   color: var(--text-faint);
+  text-shadow: none;
 }
-.slot-result.jackpot {
+.slot-result .result-hint {
+  color: var(--text-faint);
+  font-family: var(--font-body);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: none;
+}
+.slot-result.win .result-label,
+.slot-result.pair .result-label {
+  color: var(--gold-bright);
+  text-shadow: 0 0 14px rgba(216, 169, 74, 0.5);
+}
+.slot-result.jackpot .result-label {
   color: #fff;
   text-shadow: 0 0 24px rgba(216, 169, 74, 0.9);
+}
+.slot-result.jackpot .result-amt {
+  color: #fff;
+}
+
+/* ==== Paytable — "How to Win" ============================================ */
+.paytable {
+  margin: 22px auto 0;
+  width: 100%;
+  max-width: 700px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, rgba(28, 24, 17, 0.5), rgba(10, 8, 6, 0.7));
+  padding: 18px 20px;
+}
+.paytable-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.paytable-head > span:first-child {
+  font-family: var(--font-deco);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-size: 13px;
+  color: var(--champagne);
+}
+.paytable-note {
+  font-size: 11px;
+  color: var(--text-faint);
+  letter-spacing: 0.08em;
+}
+.paytable-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.pay-row {
+  display: grid;
+  grid-template-columns: 1fr auto 56px 92px;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  transition: background 0.2s;
+}
+.pay-row:hover {
+  background: rgba(177, 129, 42, 0.06);
+}
+.pay-row.big {
+  border-color: var(--line-soft);
+  background: rgba(177, 129, 42, 0.05);
+}
+.pay-row.jackpot {
+  border-color: var(--line);
+  background: radial-gradient(
+    120% 130% at 0% 50%,
+    rgba(216, 169, 74, 0.16),
+    rgba(177, 129, 42, 0.04)
+  );
+  box-shadow: inset 0 0 0 1px rgba(216, 169, 74, 0.18);
+}
+.pay-row.minor {
+  opacity: 0.82;
+  border-top: 1px dashed var(--line-soft);
+  border-radius: 0;
+  margin-top: 4px;
+  padding-top: 12px;
+}
+.pay-combo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.pay-glyphs {
+  font-size: 22px;
+  line-height: 1;
+  letter-spacing: 2px;
+  white-space: nowrap;
+}
+.pay-name {
+  font-size: 13px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pay-row.jackpot .pay-name {
+  color: var(--gold-bright);
+  font-weight: 500;
+}
+.pay-odds {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.pay-mult {
+  font-family: var(--font-deco);
+  text-align: right;
+  color: var(--text-dim);
+  font-size: 15px;
+}
+.pay-amt {
+  font-family: var(--font-deco);
+  text-align: right;
+  color: var(--gold-bright);
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+}
+.pay-row.jackpot .pay-amt {
+  color: #fff;
+  text-shadow: 0 0 14px rgba(216, 169, 74, 0.6);
+}
+.paytable-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line-soft);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+}
+.paytable-legend .lg {
+  color: var(--text-faint);
+}
+.paytable-legend .lg.jackpot {
+  color: var(--gold-bright);
+}
+.paytable-legend .lg.big {
+  color: var(--champagne);
 }
 
 /* ==== Blackjack ========================================================== */
@@ -636,13 +827,6 @@
 }
 
 /* ==== Orchestration feed ================================================= */
-.side-col {
-  display: flex;
-  flex-direction: column;
-  gap: 22px;
-  position: sticky;
-  top: 96px;
-}
 .feed {
   max-height: 420px;
   overflow-y: auto;

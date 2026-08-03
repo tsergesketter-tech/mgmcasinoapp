@@ -97,48 +97,32 @@ export default function App() {
       </header>
 
       <div className="shell">
-        <section className="hero">
-          <div className="eyebrow">MGM Grand · Las Vegas</div>
-          <h1>
-            The Floor, <span className="foil-text">In Real Time</span>
-          </h1>
-          <p>
-            Every jackpot, swing, and step across the floor streams to
-            Salesforce Data 360 — so hosts reach their players at the moment
-            that matters.
-          </p>
-
-          <div className="mode-switch" role="tablist" aria-label="Game mode">
-            <button
-              role="tab"
-              aria-selected={mode === "slots"}
-              className={mode === "slots" ? "active" : ""}
-              onClick={() => setMode("slots")}
-            >
-              {mode === "slots" && (
-                <motion.span layoutId="glider" className="glider" />
-              )}
-              <span>Slots</span>
-            </button>
-            <button
-              role="tab"
-              aria-selected={mode === "blackjack"}
-              className={mode === "blackjack" ? "active" : ""}
-              onClick={() => setMode("blackjack")}
-            >
-              {mode === "blackjack" && (
-                <motion.span layoutId="glider" className="glider" />
-              )}
-              <span>Blackjack</span>
-            </button>
-          </div>
-        </section>
-
-        <div className="stage">
-          <div className="panel">
-            <div className="panel-title">
-              <h2>{mode === "slots" ? "High Limit Slots" : "Blackjack"}</h2>
-              <span className="tag">Playing as</span>
+        {/* Game front-and-center */}
+        <section className="game-stage">
+          <div className="game-controls-bar">
+            <div className="mode-switch" role="tablist" aria-label="Game mode">
+              <button
+                role="tab"
+                aria-selected={mode === "slots"}
+                className={mode === "slots" ? "active" : ""}
+                onClick={() => setMode("slots")}
+              >
+                {mode === "slots" && (
+                  <motion.span layoutId="glider" className="glider" />
+                )}
+                <span>Slots</span>
+              </button>
+              <button
+                role="tab"
+                aria-selected={mode === "blackjack"}
+                className={mode === "blackjack" ? "active" : ""}
+                onClick={() => setMode("blackjack")}
+              >
+                {mode === "blackjack" && (
+                  <motion.span layoutId="glider" className="glider" />
+                )}
+                <span>Blackjack</span>
+              </button>
             </div>
 
             <PlayerStrip
@@ -146,32 +130,34 @@ export default function App() {
               activeId={activeId}
               onSelect={setActiveId}
             />
-
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={mode}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -12 }}
-                transition={{ duration: 0.3 }}
-              >
-                {mode === "slots" ? (
-                  <SlotMachine player={activePlayer} onCoins={fireCoins} />
-                ) : (
-                  <Blackjack player={activePlayer} onCoins={fireCoins} />
-                )}
-              </motion.div>
-            </AnimatePresence>
           </div>
 
-          <div className="side-col">
-            <OrchestrationFeed items={feed} />
-            <FloorMap
-              players={players}
-              activeId={activeId}
-              onSelect={setActiveId}
-            />
-          </div>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={mode}
+              className="game-mount"
+              initial={{ opacity: 0, y: 14, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -14 }}
+              transition={{ duration: 0.3 }}
+            >
+              {mode === "slots" ? (
+                <SlotMachine player={activePlayer} onCoins={fireCoins} />
+              ) : (
+                <Blackjack player={activePlayer} onCoins={fireCoins} />
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </section>
+
+        {/* Real-time orchestration context, secondary */}
+        <div className="side-grid">
+          <OrchestrationFeed items={feed} />
+          <FloorMap
+            players={players}
+            activeId={activeId}
+            onSelect={setActiveId}
+          />
         </div>
       </div>
 

@@ -1,6 +1,13 @@
 import { useCallback, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { SYMBOLS, spinReel, evaluate, type SlotSymbol } from "../lib/slots";
+import {
+  SYMBOLS,
+  spinReel,
+  evaluate,
+  symbolOdds,
+  BIG_WIN_MULTIPLE,
+  type SlotSymbol,
+} from "../lib/slots";
 import { emitEvent } from "../lib/events";
 import type { Player } from "../lib/players";
 
@@ -33,9 +40,11 @@ export default function SlotMachine({ player, onCoins }: Props) {
     [SYMBOLS[3]],
     [SYMBOLS[2]],
   ]);
-  const [result, setResult] = useState<{ text: string; kind: string } | null>(
-    null
-  );
+  const [result, setResult] = useState<{
+    text: string;
+    kind: string;
+    win: number;
+  } | null>(null);
   const busy = useRef(false);
 
   const changeBet = (dir: number) => {
@@ -57,7 +66,7 @@ export default function SlotMachine({ player, onCoins }: Props) {
     await new Promise((r) => setTimeout(r, SPIN_SETTLE_MS));
 
     const outcome = evaluate(finals, bet);
-    setResult({ text: outcome.label, kind: outcome.kind });
+    setResult({ text: outcome.label, kind: outcome.kind, win: outcome.win });
 
     if (outcome.win > 0) {
       setCredits((c) => c + outcome.win);
@@ -76,7 +85,7 @@ export default function SlotMachine({ player, onCoins }: Props) {
         severity: "critical",
         message: `${player.name} hit the MGM Grand Jackpot for $${outcome.win.toLocaleString()} on High Limit Slots!`,
       });
-    } else if (outcome.win >= bet * 8) {
+    } else if (outcome.win >= bet * BIG_WIN_MULTIPLE) {
       onCoins();
       await emitEvent({
         type: "BIG_WIN",
@@ -114,6 +123,23 @@ export default function SlotMachine({ player, onCoins }: Props) {
           <div className="payline" />
         </div>
 
+        <div className={`slot-result ${result?.kind ?? ""}`}>
+          {result ? (
+            <>
+              <span className="result-label">{result.text}</span>
+              {result.win > 0 ? (
+                <span className="result-amt">
+                  +${result.win.toLocaleString()}
+                </span>
+              ) : (
+                <span className="result-amt muted">−${bet}</span>
+              )}
+            </>
+          ) : (
+            <span className="result-hint">Match 3 to win big · any 2 pays back your bet</span>
+          )}
+        </div>
+
         <div className="slot-controls">
           <div className="credit-read">
             <small>Credits</small>
@@ -142,8 +168,67 @@ export default function SlotMachine({ player, onCoins }: Props) {
         </div>
       </div>
 
-      <div className={`slot-result ${result?.kind ?? ""}`}>
-        {result?.text ?? ""}
+      <Paytable bet={bet} />
+    </div>
+  );
+}
+
+// Spells out exactly how to win — big and little — for the current bet.
+// Driven by the same SYMBOLS/thresholds the game uses, so it's always accurate.
+function Paytable({ bet }: { bet: number }) {
+  return (
+    <div className="paytable">
+      <div className="paytable-head">
+        <span>How to Win</span>
+        <span className="paytable-note">Payouts shown for your ${bet} bet</span>
+      </div>
+
+      <div className="paytable-rows">
+        {SYMBOLS.map((s) => {
+          const win = s.payout * bet;
+          const big = s.payout >= BIG_WIN_MULTIPLE;
+          const jackpot = s.name === "Lion";
+          const payMult = jackpot ? s.payout * 2 : s.payout;
+          const payAmt = jackpot ? win * 2 : win;
+          return (
+            <div
+              key={s.name}
+              className={`pay-row ${jackpot ? "jackpot" : big ? "big" : ""}`}
+            >
+              <span className="pay-combo">
+                <span className="pay-glyphs">
+                  {s.glyph}
+                  {s.glyph}
+                  {s.glyph}
+                </span>
+                <span className="pay-name">
+                  {jackpot ? "MGM Jackpot" : `${s.name} Triple`}
+                </span>
+              </span>
+              <span className="pay-odds">
+                ~1 in {Math.round(1 / Math.pow(symbolOdds(s), 3)).toLocaleString()}
+              </span>
+              <span className="pay-mult">{payMult}×</span>
+              <span className="pay-amt">${payAmt.toLocaleString()}</span>
+            </div>
+          );
+        })}
+
+        <div className="pay-row minor">
+          <span className="pay-combo">
+            <span className="pay-glyphs">🍒🍒 ·</span>
+            <span className="pay-name">Any Matching Pair</span>
+          </span>
+          <span className="pay-odds">frequent</span>
+          <span className="pay-mult">1×</span>
+          <span className="pay-amt">${bet.toLocaleString()}</span>
+        </div>
+      </div>
+
+      <div className="paytable-legend">
+        <span className="lg jackpot">◆ Jackpot — critical host alert</span>
+        <span className="lg big">● Big win ({BIG_WIN_MULTIPLE}×+) — notable alert</span>
+        <span className="lg pair">Pair — returns your bet</span>
       </div>
     </div>
   );
@@ -158,7 +243,7 @@ function Reel({
   spinning: boolean;
   index: number;
 }) {
-  const cellH = 118;
+  const cellH = 150; // must match --reel-h in app.css
   const finalOffset = -(strip.length - 1) * cellH;
 
   return (

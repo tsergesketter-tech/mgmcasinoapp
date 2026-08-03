@@ -16,9 +16,20 @@ export const SYMBOLS: SlotSymbol[] = [
   { glyph: "🍋", name: "Lemon", weight: 14, payout: 2 },
 ];
 
+// A triple paying at least this multiple of the bet counts as a "big win"
+// (fires a notable host alert). Used by both the paytable and the emitter so
+// they can never disagree.
+export const BIG_WIN_MULTIPLE = 8;
+
 const POOL: SlotSymbol[] = SYMBOLS.flatMap((s) =>
   Array<SlotSymbol>(s.weight).fill(s)
 );
+
+// Odds of a single reel landing on a given symbol, for the paytable display.
+const POOL_SIZE = POOL.length;
+export function symbolOdds(s: SlotSymbol): number {
+  return s.weight / POOL_SIZE;
+}
 
 export function spinReel(): SlotSymbol {
   return POOL[Math.floor(Math.random() * POOL.length)];
