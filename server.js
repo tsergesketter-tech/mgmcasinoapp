@@ -39,12 +39,12 @@ function normalizePem(raw) {
   return `-----BEGIN ${label}-----\n${wrapped}\n-----END ${label}-----\n`;
 }
 const SF_PRIVATE_KEY = normalizePem(process.env.SF_PRIVATE_KEY || "");
-// The ingest path is /api/v1/ingest/sources/{connectorName}/{objectName} —
-// TWO distinct names. D360_SOURCE = the Ingestion API connector API name
-// (e.g. MGM_Casino_Event_Emitter); D360_OBJECT = the source object within it
-// (e.g. mgmFloorEvents). Override either via config var.
-const D360_SOURCE = process.env.D360_SOURCE || "MGM_Casino_Event_Emitter";
-const D360_OBJECT = process.env.D360_OBJECT || "mgmFloorEvents";
+// This app emits through the Data Cloud S2S (Server-to-Server) Events API, not
+// the Ingestion API. The path is /server/events/{appSourceId} where appSourceId
+// is the system-generated Source ID from the Web & Mobile SDK "Server to Server"
+// connection in Setup. Override via the D360_APP_SOURCE_ID config var.
+const D360_APP_SOURCE_ID =
+  process.env.D360_APP_SOURCE_ID || "68544218-5272-4730-84aa-cfa6c3c2aa14";
 const D360_LIVE = Boolean(SF_CLIENT_ID && SF_USERNAME && SF_PRIVATE_KEY);
 
 const MIME = {
@@ -74,7 +74,7 @@ async function sendFile(res, filePath) {
 }
 
 // ---- Data Cloud token pipeline ---------------------------------------------
-// Two-hop auth, both cached: (1) core OAuth client-credentials token, then
+// Two-hop auth, both cached: (1) core OAuth JWT-bearer token, then
 // (2) token exchange for a Data Cloud "offcore" token + DC instance URL.
 // An in-flight promise dedupes concurrent refreshes (mirrors Palonia's server).
 let dcCache = null; // { token, instanceUrl, exp }
@@ -209,7 +209,9 @@ function json(res, status, obj) {
 }
 
 // POST /api/ingest — the browser posts { data: [ record, ... ] }; we attach a
-// fresh Data Cloud token and forward to the Ingestion API. Retries once on 401.
+// fresh Data Cloud token and forward each record to the S2S Events API as
+// { events: [...] }. The S2S API returns 204 (no body) on success and processes
+// asynchronously (~3 min). Retries once on 401.
 async function handleIngest(req, res) {
   if (!D360_LIVE) {
     return json(res, 503, {
@@ -228,30 +230,32 @@ async function handleIngest(req, res) {
     return json(res, 400, { ok: false, detail: "expected { data: [ ... ] }" });
   }
 
-  const ingest = async (dc) =>
-    fetch(`${dc.instanceUrl}/api/v1/ingest/sources/${D360_SOURCE}/${D360_OBJECT}`, {
+  const emit = async (dc) =>
+    fetch(`${dc.instanceUrl}/server/events/${D360_APP_SOURCE_ID}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${dc.token}`,
       },
-      body: JSON.stringify({ data: payload.data }),
+      body: JSON.stringify({ events: payload.data }),
     });
 
   try {
     let dc = await getDataCloudToken();
-    let upstream = await ingest(dc);
+    let upstream = await emit(dc);
     if (upstream.status === 401) {
       dcCache = null; // force refresh
       dc = await getDataCloudToken();
-      upstream = await ingest(dc);
+      upstream = await emit(dc);
     }
     const text = await upstream.text().catch(() => "");
-    return json(res, upstream.ok ? 202 : 502, {
-      ok: upstream.ok,
+    // S2S success is 204 No Content; treat any 2xx as accepted.
+    const accepted = upstream.status >= 200 && upstream.status < 300;
+    return json(res, accepted ? 202 : 502, {
+      ok: accepted,
       status: upstream.status,
-      detail: upstream.ok
-        ? `Ingested ${payload.data.length} record(s) → ${D360_SOURCE}/${D360_OBJECT}`
+      detail: accepted
+        ? `Emitted ${payload.data.length} event(s) → S2S ${D360_APP_SOURCE_ID}`
         : `D360 rejected (${upstream.status}): ${text.slice(0, 300)}`,
     });
   } catch (err) {
@@ -274,8 +278,8 @@ const server = createServer(async (req, res) => {
       return json(res, 200, {
         ok: true,
         d360Live: D360_LIVE,
-        source: D360_SOURCE,
-        object: D360_OBJECT,
+        api: "s2s-events",
+        appSourceId: D360_APP_SOURCE_ID,
       });
     }
 
