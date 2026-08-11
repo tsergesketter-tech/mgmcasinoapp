@@ -6,7 +6,12 @@ import Blackjack from "./components/Blackjack";
 import OrchestrationFeed, { type FeedItem } from "./components/OrchestrationFeed";
 import FloorMap from "./components/FloorMap";
 import { PLAYERS, TIER_META, movePlayer, type Player } from "./lib/players";
-import { subscribe, subscribeResult, emitEvent } from "./lib/events";
+import {
+  subscribe,
+  subscribeResult,
+  emitEvent,
+  initD360FromServer,
+} from "./lib/events";
 
 type Mode = "slots" | "blackjack";
 
@@ -23,6 +28,12 @@ export default function App() {
     () => players.find((p) => p.id === activeId) ?? players[0],
     [players, activeId]
   );
+
+  // On startup, ask the server whether live Data 360 ingestion is configured;
+  // if so, events flow through the /api/ingest proxy instead of being simulated.
+  useEffect(() => {
+    initD360FromServer();
+  }, []);
 
   // Subscribe to emitted events (render immediately) and to their D360 dispatch
   // results (update the same feed row's status when the round-trip resolves).

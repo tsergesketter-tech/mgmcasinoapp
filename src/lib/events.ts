@@ -57,16 +57,14 @@ export interface FloorLocation {
 // ---- The D360 dispatch seam -------------------------------------------------
 
 export interface D360Config {
-  // Data Cloud instance URL (offcore) once the token exchange has run.
-  ingestUrl?: string;
-  // Returns a valid Data Cloud offcore access token (caller handles the
-  // core-token → /services/a360/token exchange + caching).
-  getAccessToken?: () => Promise<string>;
-  sourceApiName?: string; // Ingestion API source connector object name
-  live: boolean; // false = Phase 1 simulation, true = real S2S POST
+  // Same-origin server endpoint that proxies to the Data Cloud Ingestion API.
+  // The server (server.js) holds the OAuth secret + runs the token exchange;
+  // the browser never sees a Salesforce token.
+  ingestEndpoint?: string;
+  live: boolean; // false = Phase 1 simulation, true = real POST via the proxy
 }
 
-let config: D360Config = { live: false, sourceApiName: "mgmFloorEvents" };
+let config: D360Config = { live: false, ingestEndpoint: "/api/ingest" };
 
 // Stable per-load identifiers for the mandatory Engagement deviceId/sessionId.
 // One "device" (this browser/kiosk) and one session per app load.
@@ -91,6 +89,23 @@ export function getD360Config(): D360Config {
   return config;
 }
 
+/**
+ * Ask the server whether Data 360 ingestion is configured; if so, flip to live
+ * mode so events flow through the /api/ingest proxy. Safe to call on startup —
+ * on any error it leaves the app in simulation mode. Returns the live flag.
+ */
+export async function initD360FromServer(): Promise<boolean> {
+  try {
+    const res = await fetch("/api/health");
+    if (!res.ok) return false;
+    const h = (await res.json()) as { d360Live?: boolean };
+    if (h.d360Live) configureD360({ live: true });
+    return Boolean(h.d360Live);
+  } catch {
+    return false;
+  }
+}
+
 export interface DispatchResult {
   ok: boolean;
   mode: "simulated" | "live";
@@ -109,29 +124,23 @@ async function dispatchToD360(event: CasinoEvent): Promise<DispatchResult> {
     };
   }
 
-  // Phase 2: real POST to the Data Cloud Ingestion API with an offcore token.
+  // Phase 2: POST to our same-origin proxy, which attaches a Data Cloud token
+  // server-side and forwards to the Ingestion API. No secret in the browser.
   try {
-    if (!config.ingestUrl || !config.getAccessToken) {
-      throw new Error("D360 live mode not fully configured");
-    }
-    const token = await config.getAccessToken();
-    const res = await fetch(
-      `${config.ingestUrl}/api/v1/ingest/sources/${config.sourceApiName}/data`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ data: [toD360Record(event)] }),
-      }
-    );
+    const res = await fetch(config.ingestEndpoint ?? "/api/ingest", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ data: [toD360Record(event)] }),
+    });
+    const info = (await res.json().catch(() => ({}))) as { detail?: string };
     return {
       ok: res.ok,
       mode: "live",
-      detail: res.ok
-        ? `Ingested → Data 360 (${res.status})`
-        : `D360 rejected (${res.status})`,
+      detail:
+        info.detail ??
+        (res.ok
+          ? `Ingested → Data 360 (${res.status})`
+          : `D360 rejected (${res.status})`),
     };
   } catch (err) {
     return {
