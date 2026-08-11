@@ -3,3 +3,10 @@ dist
 
 # build output already ignored above
 *.log
+
+# secrets — never commit
+.env
+keypair/
+
+# local marketing assets, not part of the app deploy
+emails/

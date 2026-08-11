@@ -158,13 +158,23 @@ async function dispatchToD360(event: CasinoEvent): Promise<DispatchResult> {
 // schemas REQUIRE these six exact names: eventId, eventType, dateTime,
 // category, deviceId, sessionId. `dateTime` (not `timestamp`) — Timestamp is
 // a reserved DLO field.
+//
+// IMPORTANT: `eventType` and `category` are Salesforce PLATFORM-ROUTING fields,
+// NOT business fields. The S2S endpoint uses them to route the event to a schema
+// definition: `eventType` MUST equal the schema event's developerName
+// ("mgmFloorEvents") and `category` MUST be the platform category ("Engagement").
+// Sending business values (JACKPOT / SLOTS) → HTTP 204 but the event is silently
+// dropped (never routed, never lands in the DLO). The real casino event type
+// (JACKPOT / BIG_WIN) rides in `severity` + `message`; to promote it to its own
+// column, add a `casinoEventType` field to the S2S schema first (undeclared
+// fields are rejected), then map e.type to it here.
 function toD360Record(e: CasinoEvent) {
   return {
-    // Mandatory Engagement fields
+    // Mandatory Engagement fields — eventType/category are routing values
     eventId: e.id,
-    eventType: e.type,
+    eventType: "mgmFloorEvents", // schema developerName (routing, not business)
     dateTime: e.ts,
-    category: e.game, // engagement category (SLOTS / BLACKJACK)
+    category: "Engagement", // platform category (routing, not business)
     deviceId: DEVICE_ID,
     sessionId: SESSION_ID,
     // Domain fields
