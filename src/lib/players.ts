@@ -21,7 +21,18 @@ function at(waypointId: string): { waypointId: string; location: FloorLocation }
 }
 
 // A roster of high-value players a host would be tracking on the floor.
+// NOTE: Danny Ocean's `id` is his Salesforce Contact Id (not a "P-" code) so
+// that every event he emits carries playerId = ContactId → partyId__c → the
+// MGM Calculated Insights, tying his floor activity to his Contact record.
 export const PLAYERS: Player[] = [
+  {
+    id: "003gK00000vqazSQAQ",
+    name: "Danny Ocean",
+    tier: "NOIR",
+    hostName: "Marcus Webb",
+    ...at("W-HLS"),
+    avatarSeed: "danny",
+  },
   {
     id: "P-1001",
     name: "Vivian Cross",
