@@ -66,7 +66,22 @@ export interface D360Config {
   live: boolean; // false = Phase 1 simulation, true = real S2S POST
 }
 
-let config: D360Config = { live: false, sourceApiName: "MGM_Floor_Events" };
+let config: D360Config = { live: false, sourceApiName: "mgmFloorEvents" };
+
+// Stable per-load identifiers for the mandatory Engagement deviceId/sessionId.
+// One "device" (this browser/kiosk) and one session per app load.
+const DEVICE_ID =
+  (typeof localStorage !== "undefined" &&
+    (localStorage.getItem("mgm.deviceId") ||
+      (() => {
+        const d = `dev-${Math.random().toString(36).slice(2, 10)}`;
+        localStorage.setItem("mgm.deviceId", d);
+        return d;
+      })())) ||
+  "dev-server";
+const SESSION_ID = `ses-${Date.now().toString(36)}-${Math.random()
+  .toString(36)
+  .slice(2, 8)}`;
 
 export function configureD360(next: Partial<D360Config>) {
   config = { ...config, ...next };
@@ -129,21 +144,31 @@ async function dispatchToD360(event: CasinoEvent): Promise<DispatchResult> {
 
 // Flatten our event into a Data 360 ingestion record. Keep field names stable —
 // the DMO mapping and Data Action conditions key off these.
+// Field names must match the Ingestion API source schema developerNames in
+// data/d360/mgm_floor_events_s2s_schema.json exactly. Engagement-category
+// schemas REQUIRE these six exact names: eventId, eventType, dateTime,
+// category, deviceId, sessionId. `dateTime` (not `timestamp`) — Timestamp is
+// a reserved DLO field.
 function toD360Record(e: CasinoEvent) {
   return {
-    EventId: e.id,
-    EventType: e.type,
-    Timestamp: e.ts,
-    PlayerId: e.player.id,
-    PlayerName: e.player.name,
-    PlayerTier: e.player.tier,
-    Game: e.game,
-    Amount: e.amount ?? 0,
-    Zone: e.location?.zone ?? "",
-    FloorX: e.location?.x ?? null,
-    FloorY: e.location?.y ?? null,
-    Severity: e.severity,
-    Message: e.message,
+    // Mandatory Engagement fields
+    eventId: e.id,
+    eventType: e.type,
+    dateTime: e.ts,
+    category: e.game, // engagement category (SLOTS / BLACKJACK)
+    deviceId: DEVICE_ID,
+    sessionId: SESSION_ID,
+    // Domain fields
+    playerId: e.player.id,
+    playerName: e.player.name,
+    playerTier: e.player.tier,
+    game: e.game,
+    amount: e.amount ?? 0,
+    zone: e.location?.zone ?? "",
+    floorX: e.location?.x ?? null,
+    floorY: e.location?.y ?? null,
+    severity: e.severity,
+    message: e.message,
   };
 }
 
