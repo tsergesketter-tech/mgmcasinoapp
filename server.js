@@ -6,19 +6,25 @@ import { createServer } from "node:http";
 import { readFile, stat } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createSign } from "node:crypto";
 
 const DIST = join(fileURLToPath(new URL(".", import.meta.url)), "dist");
 const PORT = process.env.PORT || 8080;
 
 // ---- Data 360 S2S config (all secrets stay server-side) --------------------
-// Set these as Heroku config vars to enable live ingestion. If any are
-// missing, /api/ingest replies 503 and the browser silently falls back to
-// simulated mode — the demo still runs.
+// Auth is the JWT Bearer flow: we sign an assertion with the connected app's
+// private key and exchange it for a core token, then exchange that for a Data
+// Cloud token. Set these as Heroku config vars to enable live ingestion; if
+// any required one is missing, /api/ingest replies 503 and the browser
+// silently falls back to simulated mode — the demo still runs.
 const SF_LOGIN_URL = process.env.SF_LOGIN_URL || "https://login.salesforce.com";
-const SF_CLIENT_ID = process.env.SF_CLIENT_ID;
-const SF_CLIENT_SECRET = process.env.SF_CLIENT_SECRET;
+const SF_CLIENT_ID = process.env.SF_CLIENT_ID; // connected app consumer key → JWT `iss`
+const SF_USERNAME = process.env.SF_USERNAME; // run-as user → JWT `sub`
+// PEM private key matching the cert on the connected app. Provide inline
+// (SF_PRIVATE_KEY, with literal \n or real newlines) — the Heroku-friendly way.
+const SF_PRIVATE_KEY = (process.env.SF_PRIVATE_KEY || "").replace(/\\n/g, "\n");
 const D360_SOURCE = process.env.D360_SOURCE || "mgmFloorEvents";
-const D360_LIVE = Boolean(SF_CLIENT_ID && SF_CLIENT_SECRET);
+const D360_LIVE = Boolean(SF_CLIENT_ID && SF_USERNAME && SF_PRIVATE_KEY);
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -53,11 +59,41 @@ async function sendFile(res, filePath) {
 let dcCache = null; // { token, instanceUrl, exp }
 let dcInflight = null;
 
+function base64url(input) {
+  return Buffer.from(input)
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
+// Build + sign a JWT Bearer assertion (RS256) for the connected app.
+// aud must be the token host the assertion is presented to (login/My Domain).
+function buildJwtAssertion() {
+  const header = base64url(JSON.stringify({ alg: "RS256", typ: "JWT" }));
+  const now = Math.floor(Date.now() / 1000);
+  const claims = base64url(
+    JSON.stringify({
+      iss: SF_CLIENT_ID,
+      sub: SF_USERNAME,
+      aud: SF_LOGIN_URL,
+      exp: now + 180, // short-lived; used immediately for the token exchange
+    })
+  );
+  const signingInput = `${header}.${claims}`;
+  const signature = createSign("RSA-SHA256")
+    .update(signingInput)
+    .sign(SF_PRIVATE_KEY, "base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+  return `${signingInput}.${signature}`;
+}
+
 async function fetchCoreToken() {
   const body = new URLSearchParams({
-    grant_type: "client_credentials",
-    client_id: SF_CLIENT_ID,
-    client_secret: SF_CLIENT_SECRET,
+    grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+    assertion: buildJwtAssertion(),
   });
   const res = await fetch(`${SF_LOGIN_URL}/services/oauth2/token`, {
     method: "POST",
@@ -157,7 +193,8 @@ async function handleIngest(req, res) {
   if (!D360_LIVE) {
     return json(res, 503, {
       ok: false,
-      detail: "D360 live mode not configured (set SF_CLIENT_ID / SF_CLIENT_SECRET).",
+      detail:
+        "D360 live mode not configured (set SF_CLIENT_ID / SF_USERNAME / SF_PRIVATE_KEY).",
     });
   }
   let payload;
