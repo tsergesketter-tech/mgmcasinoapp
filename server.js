@@ -20,9 +20,23 @@ const PORT = process.env.PORT || 8080;
 const SF_LOGIN_URL = process.env.SF_LOGIN_URL || "https://login.salesforce.com";
 const SF_CLIENT_ID = process.env.SF_CLIENT_ID; // connected app consumer key → JWT `iss`
 const SF_USERNAME = process.env.SF_USERNAME; // run-as user → JWT `sub`
-// PEM private key matching the cert on the connected app. Provide inline
-// (SF_PRIVATE_KEY, with literal \n or real newlines) — the Heroku-friendly way.
-const SF_PRIVATE_KEY = (process.env.SF_PRIVATE_KEY || "").replace(/\\n/g, "\n");
+// PEM private key matching the cert on the connected app. Config-var editors
+// mangle PEM whitespace inconsistently (literal \n, real newlines, or newlines
+// collapsed to spaces), so we normalize: pull out the base64 body regardless of
+// how it was broken up, then re-wrap it into a canonical PEM. Handles PKCS#8
+// ("PRIVATE KEY") and PKCS#1 ("RSA PRIVATE KEY").
+function normalizePem(raw) {
+  if (!raw) return "";
+  const m = raw.match(
+    /-----BEGIN ([A-Z ]+?)-----([\s\S]*?)-----END \1-----/
+  );
+  if (!m) return raw.replace(/\\n/g, "\n"); // no header found — best effort
+  const label = m[1].trim();
+  const body = m[2].replace(/\\n/g, "").replace(/\s+/g, ""); // strip all whitespace
+  const wrapped = body.match(/.{1,64}/g)?.join("\n") ?? body;
+  return `-----BEGIN ${label}-----\n${wrapped}\n-----END ${label}-----\n`;
+}
+const SF_PRIVATE_KEY = normalizePem(process.env.SF_PRIVATE_KEY || "");
 const D360_SOURCE = process.env.D360_SOURCE || "mgmFloorEvents";
 const D360_LIVE = Boolean(SF_CLIENT_ID && SF_USERNAME && SF_PRIVATE_KEY);
 
