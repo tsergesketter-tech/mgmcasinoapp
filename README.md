@@ -1,32 +1,64 @@
-# React + TypeScript + Vite
+# MGM Host:Player — Real-Time Floor Orchestration
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+A casino-floor demo (slots + blackjack) whose meaningful moments — big wins,
+jackpots, losses, player movement — are emitted as events. In Phase 1 those
+events are simulated in the browser; in Phase 2 they stream into Salesforce
+**Data 360** and drive real-time host orchestration.
 
-Currently, two official plugins are available:
+Built with React 19 + Vite + TypeScript. Served in production by a tiny
+built-in Node server (`server.js`, no runtime dependencies).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Develop
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run dev        # Vite dev server (proxies /api → :8080 for the ingest route)
+npm run build      # type-check + bundle to dist/
+node server.js     # serve the built dist/ + the /api/ingest proxy
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Event flow
+
+Every floor moment goes through `emitEvent()` in `src/lib/events.ts`. Each
+event is rendered in the Orchestration Feed immediately, then dispatched:
+
+- **Simulated** (default): a fake round-trip, no network.
+- **Live**: `POST /api/ingest` → `server.js` attaches a Data Cloud token and
+  forwards to the Ingestion API. The browser never holds a Salesforce token.
+
+On startup the app calls `initD360FromServer()`, which hits `/api/health`; if
+the server reports Data 360 is configured, the app switches to live mode
+automatically.
+
+## Data 360 live ingestion
+
+Set these **server-side** config vars (Heroku config vars, or a local `.env` —
+see `.env.example`). With none set, the app runs in simulated mode.
+
+| Var | Required | Purpose |
+| --- | --- | --- |
+| `SF_CLIENT_ID` | yes | Connected app consumer key (client-credentials flow) |
+| `SF_CLIENT_SECRET` | yes | Connected app consumer secret |
+| `SF_LOGIN_URL` | no | Login/My Domain host (default `https://login.salesforce.com`) |
+| `D360_SOURCE` | no | Ingestion API source object (default `mgmFloorEvents`) |
+
+`server.js` performs the two-hop auth: client-credentials **core token** →
+token exchange at `/services/a360/token` for a Data Cloud **offcore token** →
+`POST {dcInstanceUrl}/api/v1/ingest/sources/{D360_SOURCE}/data`. Both tokens
+are cached with an in-flight dedupe; a 401 forces one refresh + retry.
+
+### Org-side setup (already provisioned in the demo org)
+
+1. **Ingestion API source** `mgmFloorEvents` — upload
+   `../data/d360/mgm_floor_events_s2s_schema.json` in the connector's
+   *Upload Schema File* step. Creates the source object + its DLO.
+2. **DMO** `MGM_Floor_Event__dlm` (category Engagement, PK `eventId`) — the
+   target the DLO maps to. Fields mirror the schema 1:1.
+3. **Mapping** DLO → `MGM_Floor_Event__dlm`.
+4. **Data Action** on the DMO, filtered to `eventType IN ('JACKPOT','BIG_WIN')`,
+   → webhook / platform event → Flow → host notification (the real-time path).
+
+The event record shape (`toD360Record()`) and the schema `developerName`s must
+stay in lockstep — both use the six mandatory Engagement fields (`eventId`,
+`eventType`, `dateTime`, `category`, `deviceId`, `sessionId`) plus the domain
+fields.
