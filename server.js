@@ -39,7 +39,12 @@ function normalizePem(raw) {
   return `-----BEGIN ${label}-----\n${wrapped}\n-----END ${label}-----\n`;
 }
 const SF_PRIVATE_KEY = normalizePem(process.env.SF_PRIVATE_KEY || "");
-const D360_SOURCE = process.env.D360_SOURCE || "mgmFloorEvents";
+// The ingest path is /api/v1/ingest/sources/{connectorName}/{objectName} —
+// TWO distinct names. D360_SOURCE = the Ingestion API connector API name
+// (e.g. MGM_Casino_Event_Emitter); D360_OBJECT = the source object within it
+// (e.g. mgmFloorEvents). Override either via config var.
+const D360_SOURCE = process.env.D360_SOURCE || "MGM_Casino_Event_Emitter";
+const D360_OBJECT = process.env.D360_OBJECT || "mgmFloorEvents";
 const D360_LIVE = Boolean(SF_CLIENT_ID && SF_USERNAME && SF_PRIVATE_KEY);
 
 const MIME = {
@@ -224,7 +229,7 @@ async function handleIngest(req, res) {
   }
 
   const ingest = async (dc) =>
-    fetch(`${dc.instanceUrl}/api/v1/ingest/sources/${D360_SOURCE}/data`, {
+    fetch(`${dc.instanceUrl}/api/v1/ingest/sources/${D360_SOURCE}/${D360_OBJECT}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -246,7 +251,7 @@ async function handleIngest(req, res) {
       ok: upstream.ok,
       status: upstream.status,
       detail: upstream.ok
-        ? `Ingested ${payload.data.length} record(s) → ${D360_SOURCE}`
+        ? `Ingested ${payload.data.length} record(s) → ${D360_SOURCE}/${D360_OBJECT}`
         : `D360 rejected (${upstream.status}): ${text.slice(0, 300)}`,
     });
   } catch (err) {
@@ -266,7 +271,12 @@ const server = createServer(async (req, res) => {
       return await handleIngest(req, res);
     }
     if (urlPath === "/api/health") {
-      return json(res, 200, { ok: true, d360Live: D360_LIVE, source: D360_SOURCE });
+      return json(res, 200, {
+        ok: true,
+        d360Live: D360_LIVE,
+        source: D360_SOURCE,
+        object: D360_OBJECT,
+      });
     }
 
     // Static files — prevent path traversal outside dist/.
