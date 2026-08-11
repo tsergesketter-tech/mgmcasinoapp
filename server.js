@@ -30,9 +30,11 @@ function normalizePem(raw) {
   const m = raw.match(
     /-----BEGIN ([A-Z ]+?)-----([\s\S]*?)-----END \1-----/
   );
-  if (!m) return raw.replace(/\\n/g, "\n"); // no header found — best effort
-  const label = m[1].trim();
-  const body = m[2].replace(/\\n/g, "").replace(/\s+/g, ""); // strip all whitespace
+  // If the BEGIN/END header lines were stripped on paste, treat the whole
+  // value as a bare base64 body and assume PKCS#8 ("PRIVATE KEY").
+  const label = m ? m[1].trim() : "PRIVATE KEY";
+  const rawBody = m ? m[2] : raw;
+  const body = rawBody.replace(/\\n/g, "").replace(/\s+/g, ""); // strip all whitespace
   const wrapped = body.match(/.{1,64}/g)?.join("\n") ?? body;
   return `-----BEGIN ${label}-----\n${wrapped}\n-----END ${label}-----\n`;
 }
