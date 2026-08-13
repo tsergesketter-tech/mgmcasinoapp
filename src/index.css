@@ -62,19 +62,20 @@ body,
 body {
   font-family: var(--font-body);
   color: var(--text);
-  background: var(--ink);
+  background: var(--gold);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
 }
 
-/* Solid backdrop — flat ink, no gradients or grain. */
+/* Gold house backdrop — the whole app floor is MGM gold; the header bar and
+   the slot cabinet carry their own dark chrome for contrast. */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
   z-index: -2;
-  background: var(--ink);
+  background: linear-gradient(180deg, #c8923a 0%, #b1812a 46%, #8a6420 100%);
 }
 
 h1,

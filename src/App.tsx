@@ -22,6 +22,7 @@ export default function App() {
   const [players, setPlayers] = useState<Player[]>(PLAYERS);
   const [feed, setFeed] = useState<FeedItem[]>([]);
   const [coins, setCoins] = useState<number[]>([]);
+  const [liveFloor, setLiveFloor] = useState(false);
   const coinSeq = useRef(0);
 
   const activePlayer = useMemo(
@@ -63,7 +64,10 @@ export default function App() {
   // emit a PLAYER_POSITION event so hosts can track movement in real time.
   // The move is computed OUTSIDE setState (updaters must be pure — StrictMode
   // double-invokes them, which would otherwise emit duplicate events).
+  // Gated behind the "Activate Live Floor" toggle — off by default so the
+  // movement stream only starts once you flip it on.
   useEffect(() => {
+    if (!liveFloor) return;
     const id = setInterval(() => {
       const current = playersRef.current;
       const i = Math.floor(Math.random() * current.length);
@@ -79,7 +83,7 @@ export default function App() {
       });
     }, 7000);
     return () => clearInterval(id);
-  }, []);
+  }, [liveFloor]);
 
   const fireCoins = () => {
     const batch = Array.from({ length: 16 }, () => coinSeq.current++);
@@ -100,6 +104,23 @@ export default function App() {
             <small>Real-Time Floor Orchestration</small>
           </span>
         </div>
+
+        <button
+          type="button"
+          className={`live-floor-toggle ${liveFloor ? "on" : ""}`}
+          onClick={() => setLiveFloor((v) => !v)}
+          aria-pressed={liveFloor}
+          title={
+            liveFloor
+              ? "Live floor movement is emitting PLAYER_POSITION events"
+              : "Start emitting live PLAYER_POSITION movement events"
+          }
+        >
+          <span className="lf-dot" aria-hidden />
+          <span className="lf-label">
+            {liveFloor ? "Live Floor · On" : "Activate Live Floor"}
+          </span>
+        </button>
       </header>
 
       <div className="shell floor-layout">

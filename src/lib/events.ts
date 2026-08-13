@@ -66,6 +66,17 @@ export interface D360Config {
 
 let config: D360Config = { live: false, ingestEndpoint: "/api/ingest" };
 
+// Every floor event ingested into Data 360 is stamped with Danny Ocean's
+// identity — his Salesforce Contact Id (playerId → partyId__c) — so all floor
+// activity lands in his Contact context regardless of which on-screen player
+// triggered it. The in-app feed still shows the real actor; only the ingested
+// record is normalized to Danny. Keep in sync with PLAYERS[0] in players.ts.
+const DANNY = {
+  id: "003gK00000vqazSQAQ",
+  name: "Danny Ocean",
+  tier: "NOIR" as PlayerTier,
+};
+
 // Stable per-load identifiers for the mandatory Engagement deviceId/sessionId.
 // One "device" (this browser/kiosk) and one session per app load.
 const DEVICE_ID =
@@ -177,10 +188,11 @@ function toD360Record(e: CasinoEvent) {
     category: "Engagement", // platform category (routing, not business)
     deviceId: DEVICE_ID,
     sessionId: SESSION_ID,
-    // Domain fields
-    playerId: e.player.id,
-    playerName: e.player.name,
-    playerTier: e.player.tier,
+    // Domain fields — every ingested floor event is attributed to Danny Ocean
+    // so it ties to his Contact (playerId == Contact Id == partyId__c).
+    playerId: DANNY.id,
+    playerName: DANNY.name,
+    playerTier: DANNY.tier,
     game: e.game,
     amount: e.amount ?? 0,
     zone: e.location?.zone ?? "",
