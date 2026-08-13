@@ -62,20 +62,39 @@ body,
 body {
   font-family: var(--font-body);
   color: var(--text);
-  background: var(--gold);
+  background: var(--ink);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
 }
 
-/* Gold house backdrop — the whole app floor is MGM gold; the header bar and
-   the slot cabinet carry their own dark chrome for contrast. */
+/* House backdrop — a photo of the Bellagio casino floor, gently blurred so
+   the app content reads cleanly on top. The blur lives on this pseudo-element
+   (not the app), and it's scaled up slightly so the blurred edges never show. */
 body::before {
   content: "";
   position: fixed;
-  inset: 0;
+  inset: -40px;
   z-index: -2;
-  background: linear-gradient(180deg, #c8923a 0%, #b1812a 46%, #8a6420 100%);
+  background: url("/casino-floor.jpg") center / cover no-repeat;
+  filter: blur(8px) saturate(1.05);
+  transform: scale(1.06);
+}
+
+/* Warm gold/ink scrim over the photo — keeps the MGM palette dominant and
+   holds text contrast for the header, rail, and cabinet chrome. */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(10, 8, 6, 0.55) 0%,
+    rgba(138, 100, 32, 0.42) 46%,
+    rgba(10, 8, 6, 0.62) 100%
+  );
 }
 
 h1,
