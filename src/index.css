@@ -77,8 +77,8 @@ body::before {
   inset: -40px;
   z-index: -2;
   background: url("/casino-floor.jpg") center / cover no-repeat;
-  filter: blur(8px) saturate(1.05);
-  transform: scale(1.06);
+  filter: blur(4px) saturate(1.05);
+  transform: scale(1.04);
 }
 
 /* Warm gold/ink scrim over the photo — keeps the MGM palette dominant and
