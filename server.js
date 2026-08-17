@@ -47,6 +47,17 @@ const D360_APP_SOURCE_ID =
   process.env.D360_APP_SOURCE_ID || "68544218-5272-4730-84aa-cfa6c3c2aa14";
 const D360_LIVE = Boolean(SF_CLIENT_ID && SF_USERNAME && SF_PRIVATE_KEY);
 
+// ---- Jackpot → host action config -----------------------------------------
+// When the floor app emits a JACKPOT, we (1) create a follow-up Task owned by
+// the on-duty host and (2) fire the MGM Mailjet "Big Win" offer email via the
+// existing autolaunched Flow. Both run against the core REST API using the same
+// JWT-bearer token that powers D360 ingestion — no extra Apex needed.
+// Overridable via config vars for other demo orgs.
+const SF_API_VERSION = process.env.SF_API_VERSION || "v63.0"; // v67 rejects the Flow action
+const JACKPOT_HOST_USER_ID = process.env.JACKPOT_HOST_USER_ID || "005gK00006GtGfJQAV"; // Daio Lamers
+const JACKPOT_CONTACT_ID = process.env.JACKPOT_CONTACT_ID || "003gK00000vqazSQAQ"; // Danny Ocean
+const JACKPOT_FLOW_API_NAME = process.env.JACKPOT_FLOW_API_NAME || "MGM_Send_Offer_Email";
+
 const MIME = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
@@ -263,6 +274,105 @@ async function handleIngest(req, res) {
   }
 }
 
+// POST /api/jackpot — the browser posts a JACKPOT event; we create a host Task
+// (owned by Daio, related to Danny's Contact) and trigger the Mailjet offer
+// email via the MGM_Send_Offer_Email Flow. Both calls hit the core REST API
+// with the JWT-bearer token; failures are reported but don't block each other.
+async function handleJackpot(req, res) {
+  if (!D360_LIVE) {
+    return json(res, 503, {
+      ok: false,
+      detail:
+        "Jackpot actions need Salesforce auth (set SF_CLIENT_ID / SF_USERNAME / SF_PRIVATE_KEY).",
+    });
+  }
+  let payload;
+  try {
+    payload = await readJsonBody(req);
+  } catch (e) {
+    return json(res, 400, { ok: false, detail: `bad body: ${e.message}` });
+  }
+
+  const amount = Number(payload?.amount) || 0;
+  const message =
+    typeof payload?.message === "string" && payload.message.trim()
+      ? payload.message.trim()
+      : "Player hit a jackpot on the floor.";
+  const amountLabel = amount
+    ? ` ($${Math.round(amount).toLocaleString("en-US")})`
+    : "";
+
+  // Reusable authed core REST caller. Retries once on 401 by clearing the DC
+  // cache and re-minting a token (core token lives on the DC cache's parent).
+  const coreCall = async (method, path, body) => {
+    const core = await fetchCoreToken();
+    const r = await fetch(`${core.instance_url}/services/data/${SF_API_VERSION}${path}`, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${core.access_token}`,
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const text = await r.text().catch(() => "");
+    let parsed;
+    try {
+      parsed = text ? JSON.parse(text) : null;
+    } catch {
+      parsed = text;
+    }
+    return { ok: r.ok, status: r.status, body: parsed };
+  };
+
+  const result = { ok: true, task: null, email: null };
+
+  // 1) Create the host follow-up Task (owned by Daio, on Danny's Contact).
+  try {
+    const task = await coreCall("POST", "/sobjects/Task", {
+      Subject: `Jackpot follow-up — congratulate player${amountLabel}`,
+      Description: message,
+      OwnerId: JACKPOT_HOST_USER_ID,
+      WhoId: JACKPOT_CONTACT_ID,
+      Priority: "High",
+      Status: "Not Started",
+      ActivityDate: new Date().toISOString().slice(0, 10),
+    });
+    result.task = {
+      ok: task.ok,
+      id: task.ok ? task.body?.id : null,
+      detail: task.ok
+        ? `Task created for host (${task.body?.id})`
+        : `Task failed (${task.status}): ${JSON.stringify(task.body).slice(0, 200)}`,
+    };
+  } catch (err) {
+    result.task = { ok: false, detail: `Task error: ${err.message}` };
+  }
+
+  // 2) Fire the Mailjet offer email via the autolaunched Flow (no inputs → uses
+  //    its own defaults for the demo recipient/offer content).
+  try {
+    const flow = await coreCall(
+      "POST",
+      `/actions/custom/flow/${JACKPOT_FLOW_API_NAME}`,
+      { inputs: [{}] }
+    );
+    // Flow action returns 200 with an array; each entry has isSuccess.
+    const entry = Array.isArray(flow.body) ? flow.body[0] : null;
+    const flowOk = flow.ok && (entry ? entry.isSuccess !== false : true);
+    result.email = {
+      ok: flowOk,
+      detail: flowOk
+        ? "MGM Mailjet 'Big Win' email triggered"
+        : `Flow failed (${flow.status}): ${JSON.stringify(flow.body).slice(0, 200)}`,
+    };
+  } catch (err) {
+    result.email = { ok: false, detail: `Flow error: ${err.message}` };
+  }
+
+  result.ok = Boolean(result.task?.ok || result.email?.ok);
+  return json(res, result.ok ? 202 : 502, result);
+}
+
 const server = createServer(async (req, res) => {
   try {
     const urlPath = decodeURIComponent((req.url || "/").split("?")[0]);
@@ -273,6 +383,12 @@ const server = createServer(async (req, res) => {
         return json(res, 405, { ok: false, detail: "POST only" });
       }
       return await handleIngest(req, res);
+    }
+    if (urlPath === "/api/jackpot") {
+      if (req.method !== "POST") {
+        return json(res, 405, { ok: false, detail: "POST only" });
+      }
+      return await handleJackpot(req, res);
     }
     if (urlPath === "/api/health") {
       return json(res, 200, {

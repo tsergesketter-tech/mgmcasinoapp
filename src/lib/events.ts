@@ -203,6 +203,34 @@ function toD360Record(e: CasinoEvent) {
   };
 }
 
+// ---- Jackpot → host action (Task + Mailjet email) --------------------------
+// On a JACKPOT, ask the server to create a follow-up Task for the on-duty host
+// (Daio) and fire the MGM Mailjet "Big Win" offer email. Fire-and-forget: the
+// server holds the Salesforce token and does the REST calls; if it isn't
+// configured (503) or errors, the demo continues uninterrupted. Guarded so we
+// only fire once per event id.
+const firedJackpots = new Set<string>();
+
+async function triggerJackpotActions(event: CasinoEvent): Promise<void> {
+  if (event.type !== "JACKPOT") return;
+  if (firedJackpots.has(event.id)) return;
+  firedJackpots.add(event.id);
+  try {
+    await fetch("/api/jackpot", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        eventId: event.id,
+        amount: event.amount ?? 0,
+        message: event.message,
+        playerId: DANNY.id,
+      }),
+    });
+  } catch {
+    // Best-effort — never let a host-action failure break the floor UI.
+  }
+}
+
 // ---- In-app event bus -------------------------------------------------------
 // Two channels so the feed renders instantly and the dispatch status settles
 // asynchronously — which is what makes the Phase 2 swap non-blocking.
@@ -267,5 +295,10 @@ export async function emitEvent(
 
   const result = await dispatchToD360(event);
   resultListeners.forEach((fn) => fn(event.id, result));
+
+  // A jackpot kicks off the host workflow (Task for Daio + Mailjet offer email)
+  // in the background — independent of D360 ingestion mode/result.
+  void triggerJackpotActions(event);
+
   return { event, result };
 }
