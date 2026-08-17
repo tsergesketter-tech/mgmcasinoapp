@@ -15,6 +15,10 @@ import {
 
 type Mode = "slots" | "blackjack";
 
+// Danny Ocean's Salesforce Contact Id — the only player whose floor activity is
+// emitted (keep in sync with PLAYERS[0] in players.ts and DANNY in events.ts).
+const DANNY_ID = "003gK00000vqazSQAQ";
+
 export default function App() {
   const [mode, setMode] = useState<Mode>("slots");
   const [railTab, setRailTab] = useState<"feed" | "floor">("feed");
@@ -70,8 +74,14 @@ export default function App() {
     if (!liveFloor) return;
     const id = setInterval(() => {
       const current = playersRef.current;
-      const i = Math.floor(Math.random() * current.length);
-      const moved = { ...current[i], ...movePlayer(current[i]) };
+      // Only Danny Ocean emits floor activity — every ingested event ties to his
+      // Contact, so drifting/emitting for other players would leak foreign
+      // events into his feed. Move Danny specifically (fall back to PLAYERS[0]).
+      const dannyIdx = Math.max(
+        0,
+        current.findIndex((p) => p.id === DANNY_ID)
+      );
+      const moved = { ...current[dannyIdx], ...movePlayer(current[dannyIdx]) };
       setPlayers((prev) => prev.map((p) => (p.id === moved.id ? moved : p)));
       emitEvent({
         type: "PLAYER_POSITION",

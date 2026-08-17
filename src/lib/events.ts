@@ -241,8 +241,19 @@ function nextId(prefix: string) {
 export async function emitEvent(
   partial: Omit<CasinoEvent, "id" | "ts">
 ): Promise<{ event: CasinoEvent; result: DispatchResult }> {
+  // Danny-only floor activity: every emitted event is attributed to Danny Ocean
+  // regardless of which on-screen player triggered it. This is the single choke
+  // point, so normalizing here guarantees no foreign-player event can reach the
+  // feed OR the D360 ingest — the message text is rewritten to Danny too.
+  const normalizedPlayer = { id: DANNY.id, name: DANNY.name, tier: DANNY.tier };
+  const message =
+    partial.player && partial.player.name !== DANNY.name
+      ? partial.message.split(partial.player.name).join(DANNY.name)
+      : partial.message;
   const event: CasinoEvent = {
     ...partial,
+    player: normalizedPlayer,
+    message,
     id: nextId(partial.type),
     ts: new Date().toISOString(),
   };
